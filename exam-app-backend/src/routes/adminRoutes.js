@@ -1,5 +1,5 @@
 import express from "express";
-import ExamConfig from "../models/ExamConfig.js";
+import ExamConfig from "../models/ExamConfig.Js";
 
 const router = express.Router();
 
