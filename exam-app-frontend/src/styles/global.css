@@ -1,0 +1,343 @@
+/* Import Roboto from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+:root {
+  --bg-color: #ffffff;
+  --text-color: #333333;
+  --container-bg: #f9f9f9;
+  --accent-color: #007bff;
+  --accent-dark: #0056b3;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --input-bg: #ffffff;
+  --font-family: 'Roboto', sans-serif;
+}
+
+[data-theme="dark"] {
+  --bg-color: #1e1e2e;
+  --text-color: #e0e0e0;
+  --container-bg: #2c2c3e;
+  --accent-color: #ff6600;
+  --accent-dark: #ff4500;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --input-bg: #3a3a50;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family: var(--font-family);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+/* Admin Theme */
+.admin-theme {
+    border: 2px solid var(--accent-dark);
+  }
+  /* Global Reset & Variables */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --container-bg: #f9f9f9;
+    --accent-color: #007bff;
+    --accent-dark: #0056b3;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --input-bg: #ffffff;
+    --font-family: 'Roboto', sans-serif;
+  }
+  
+  body {
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-family);
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  
+  .container {
+    width: 90%;
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: var(--container-bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px var(--shadow-color);
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .subject-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+  
+  .subject-item {
+    background: var(--accent-color);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  
+ 
+  /* User Theme */
+  .user-theme {
+    border: 2px solid var(--accent-color);
+  }
+  /* Exam Container, Question Section, etc. are assumed to be defined */
+
+.subject-nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.question-section {
+  text-align: left;
+  margin-top: 1rem;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.navigation-buttons button {
+  padding: 0.5rem 1rem;
+  margin: 0 0.5rem;
+  border: none;
+  border-radius: 5px;
+  background: var(--accent-color);
+  color: #fff;
+  cursor: pointer;
+}
+
+.navigation-buttons button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.grid-navigation {
+  margin-top: 1rem;
+}
+
+.grid-navigation .grid-box {
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.3s;
+}
+
+.grid-navigation .grid-box:hover {
+  background: #f0f0f0;
+}
+
+.tick {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  color: green;
+  animation: tickAnim 0.5s ease-in-out;
+}
+
+@keyframes tickAnim {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.container {
+  width: 90%;
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: var(--container-bg);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.container:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px var(--shadow-color);
+}
+
+h2, h3, h4 {
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+button {
+  padding: 12px 20px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent-color), var(--accent-dark));
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent-color));
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  padding: 12px;
+  margin: 0.75rem 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: var(--input-bg);
+  font-size: 1rem;
+  color: var(--text-color);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 5px var(--accent-color);
+}
+
+input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+/* Horizontal Subject List */
+.subject-list {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+}
+
+.subject-item {
+  background: var(--accent-color);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+/* Error Message */
+.error {
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  color: red;
+}
+
+/* Global Reset & Variables (see previous section for full CSS) */
+
+
+
+/* Exam Container */
+.exam-container {
+    max-width: 700px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: var(--container-bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px var(--shadow-color);
+  }
+  
+  /* Timer */
+  .timer {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+  
+  /* Horizontal Subject List */
+  .subject-list {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+  }
+  .subject-item {
+    background: var(--accent-color);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  
+  /* Question Section */
+  .question-section {
+    text-align: left;
+    margin-top: 1rem;
+  }
+  .question-section h3 {
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Options - listed vertically */
+  .option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f1f1f1;
+    padding: 0.5rem;
+    color:#1e1e2e;
+    border-radius: 6px;
+  }
+  
+  /* Green Tick Animation */
+  .green-tick {
+    font-size: 3rem;
+    color: green;
+    animation: tickAnimation 1s ease-in-out;
+    margin: 1rem 0;
+  }
+  @keyframes tickAnimation {
+    0% { opacity: 0; transform: scale(0.5); }
+    50% { opacity: 1; transform: scale(1.2); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  
+  /* Responsive adjustments if needed */
+  @media (max-width: 768px) {
+    .exam-container {
+      width: 95%;
+      padding: 1rem;
+    }
+  }
+  
+
+/* Additional styling for sections */
+.profile-section {
+  margin-bottom: 1rem;
+}
+
+.score-section, .exam-ready-section, .subject-selection-section {
+  margin-bottom: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    width: 95%;
+    padding: 1rem;
+  }
+}
