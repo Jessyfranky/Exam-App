@@ -161,6 +161,7 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
+          <button onClick={handleTakeExam}>Take Exam</button>
         </div>
       )}
       <hr />
