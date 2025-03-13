@@ -8,9 +8,7 @@ const HomePage = () => {
       <h1>Welcome to Exam App</h1>
       <p>Test your knowledge and track your progress with our unique exam experience.</p>
       <button onClick={() => navigate("/login")}>Login</button>
-      <p style={{ marginTop: "1rem" }}>
-        New here? <a href="/register">Register now</a>
-      </p>
+   
     </div>
   );
 };
