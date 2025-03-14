@@ -244,6 +244,25 @@ body {
   transform: translateY(-3px);
   box-shadow: 0 5px 15px var(--shadow-color);
 }
+.feedback-message {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 5px;
+}
+
+.feedback-message.correct {
+  color: #155724;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+}
+
+.feedback-message.wrong {
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+}
 
 h2, h3, h4 {
   margin-bottom: 1rem;
