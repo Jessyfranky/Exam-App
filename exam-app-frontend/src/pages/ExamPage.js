@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import examQuestions from "../data/questions.js"; // Ensure each subject has 40 questions
+import examQuestions from "../data/questions.js"; // Ensure each subject's questions are loaded
 import "../styles/global.css";
 
 const ExamPage = () => {
   const navigate = useNavigate();
-  
+
   // Retrieve selected subjects from localStorage; assume it's an array of subject names.
   const storedSubjects = JSON.parse(localStorage.getItem("selectedSubjects")) || [];
   const [subjects, setSubjects] = useState(storedSubjects);
@@ -15,25 +15,26 @@ const ExamPage = () => {
   // Retrieve questions for the current subject.
   const questions = examQuestions[currentSubject] || [];
 
-  // Track current question index.
+  // Track current question index for the current subject.
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  // Track answers: { subject: { questionId: selectedOption, ... }, ... }
+  // Track answers: structure: { subject: { questionId: selectedOption, ... }, ... }
   const [answers, setAnswers] = useState({});
 
-  // Timer (in seconds); for example, 10 minutes per subject.
-  const initialTimer = 10 * 60; // 10 minutes in seconds
+  // Global Timer (in seconds) for the entire exam.
+  const initialTimer = 10 * 60; // Example: 10 minutes total for the entire exam.
   const [timeLeft, setTimeLeft] = useState(initialTimer);
 
-  // Reset timer and current question index whenever subject changes.
+  // Note: We no longer reset the timer on subject change.
+  // We do reset the current question index when the subject changes.
   useEffect(() => {
     setCurrentQuestionIndex(0);
-    setTimeLeft(initialTimer);
-  }, [currentSubject, initialTimer]);
+  }, [currentSubject]);
 
-  // Timer countdown effect.
+  // Global Timer countdown effect.
   useEffect(() => {
     if (timeLeft <= 0) {
-      // Optionally, auto-submit or move to next subject.
+      // When timer runs out, auto-submit the exam.
+      handleSubmitExam();
       return;
     }
     const timerId = setInterval(() => {
@@ -60,22 +61,21 @@ const ExamPage = () => {
     }));
   };
 
-  // Navigate to a specific question via grid.
+  // Navigate to a specific question via the grid.
   const handleGoToQuestion = (index) => {
     setCurrentQuestionIndex(index);
   };
 
-  // Previous button.
+  // Previous and Next buttons.
   const handlePrevious = () => {
     setCurrentQuestionIndex((prev) => (prev > 0 ? prev - 1 : 0));
   };
 
-  // Next button.
   const handleNext = () => {
     setCurrentQuestionIndex((prev) => (prev < questions.length - 1 ? prev + 1 : prev));
   };
 
-  // Subject navigation: allow switching subjects.
+  // Allow switching subjects.
   const handleSubjectChange = (index) => {
     setCurrentSubjectIndex(index);
   };
@@ -87,10 +87,15 @@ const ExamPage = () => {
     return answers[subject] && answers[subject][questionId];
   };
 
-  // Calculate progress percentage.
-  const progressPercent = questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
+  // Get user's answer for the current question.
+  const userAnswer =
+    answers[currentSubject] ? answers[currentSubject][currentQuestion?.id] : null;
 
-  // Submit exam.
+  // Calculate progress percentage for the current subject.
+  const progressPercent =
+    questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
+
+  // Submit exam: store answers and navigate to dashboard.
   const handleSubmitExam = () => {
     localStorage.setItem("examAnswers", JSON.stringify(answers));
     navigate("/dashboard");
@@ -154,17 +159,19 @@ const ExamPage = () => {
                     type="radio"
                     name={`question-${currentQuestion.id}`}
                     value={option}
-                    checked={isAnswered(currentSubject, currentQuestion.id) === option}
+                    checked={userAnswer === option}
                     onChange={() => handleAnswerSelect(currentQuestion.id, option)}
                   />
                   {option}
                 </label>
               ))}
             </div>
-            {/* After answering, show the correct answer */}
-            {isAnswered(currentSubject, currentQuestion.id) && (
-              <p style={{ color: "green", marginTop: "0.5rem" }}>
-                Correct Answer: {currentQuestion.correctAnswer}
+            {/* Feedback Message */}
+            {userAnswer && (
+              <p className={`feedback-message ${userAnswer === currentQuestion.correctAnswer ? "correct" : "wrong"}`}>
+                {userAnswer === currentQuestion.correctAnswer
+                  ? "Well done, that was correct."
+                  : "Oh... Sorry that was wrong."}
               </p>
             )}
           </div>
