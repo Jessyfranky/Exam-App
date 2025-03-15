@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://exam-app-38lm.onrender.com/api";
+const API_URL = "https://exam-app-043c.onrender.com/api";
 
 export const registerUser = async (name, email, password, role) => {
   try {
