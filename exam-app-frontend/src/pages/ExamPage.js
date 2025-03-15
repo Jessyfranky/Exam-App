@@ -1,39 +1,69 @@
+// src/pages/ExamPage.js
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import examQuestions from "../data/questions.js"; // Ensure each subject's questions are loaded
+import { useNavigate, useParams } from "react-router-dom";
+import { fetchExamConfigById } from "../services/adminApi.js"; // Backend call to fetch admin exam config
 import "../styles/global.css";
 
 const ExamPage = () => {
   const navigate = useNavigate();
+  const { examId } = useParams(); // e.g., /exam/EXAM-ABC123
 
-  // Retrieve selected subjects from localStorage; assume it's an array of subject names.
-  const storedSubjects = JSON.parse(localStorage.getItem("selectedSubjects")) || [];
-  const [subjects, setSubjects] = useState(storedSubjects);
+  // Unconditional hooks at top:
+  const [loggedInUser, setLoggedInUser] = useState(null);
+  const [adminExamConfig, setAdminExamConfig] = useState(null);
+  const [userSubjects, setUserSubjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Exam navigation & answer state:
   const [currentSubjectIndex, setCurrentSubjectIndex] = useState(0);
-  const currentSubject = subjects[currentSubjectIndex];
-
-  // Retrieve questions for the current subject.
-  const questions = examQuestions[currentSubject] || [];
-
-  // Track current question index for the current subject.
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  // Track answers: structure: { subject: { questionId: selectedOption, ... }, ... }
   const [answers, setAnswers] = useState({});
+  const [timeLeft, setTimeLeft] = useState(10 * 60); // 10 minutes global timer
+  const [examMessage, setExamMessage] = useState("");
 
-  // Global Timer (in seconds) for the entire exam.
-  const initialTimer = 10 * 60; // Example: 10 minutes total for the entire exam.
-  const [timeLeft, setTimeLeft] = useState(initialTimer);
-
-  // Note: We no longer reset the timer on subject change.
-  // We do reset the current question index when the subject changes.
+  // 1. Check if a user is logged in and ensure the user is NOT an admin.
   useEffect(() => {
-    setCurrentQuestionIndex(0);
-  }, [currentSubject]);
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    if (user.role === "admin") {
+      alert("Admins must log out and log in as a regular user to take exams.");
+      navigate("/login");
+      return;
+    }
+    setLoggedInUser(user);
+  }, [navigate]);
 
-  // Global Timer countdown effect.
+  // 2. Check if the user has selected subjects (exactly 4); if not, redirect to Dashboard.
+  useEffect(() => {
+    const storedSubjects = JSON.parse(localStorage.getItem("selectedSubjects"));
+    if (!storedSubjects || storedSubjects.length !== 4) {
+      navigate("/dashboard");
+    } else {
+      setUserSubjects(storedSubjects);
+    }
+  }, [navigate]);
+
+  // 3. Fetch the admin exam configuration using examId.
+  useEffect(() => {
+    if (examId) {
+      fetchExamConfigById(examId)
+        .then((config) => {
+          setAdminExamConfig(config);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error("Error fetching exam config:", error);
+          setLoading(false);
+        });
+    }
+  }, [examId]);
+
+  // 4. Global timer countdown effect.
   useEffect(() => {
     if (timeLeft <= 0) {
-      // When timer runs out, auto-submit the exam.
       handleSubmitExam();
       return;
     }
@@ -43,78 +73,109 @@ const ExamPage = () => {
     return () => clearInterval(timerId);
   }, [timeLeft]);
 
-  // Format time as MM:SS.
+  // 5. Format time as MM:SS.
   const formatTime = (sec) => {
     const minutes = Math.floor(sec / 60);
     const seconds = sec % 60;
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
-  // Handle answer selection for the current question.
+  // 6. Derived variables—calculate filtered subjects, current subject object, and questions.
+  let filteredSubjects = [];
+  let currentSubjectObj = null;
+  let currentSubjectQuestions = [];
+  let currentQuestion = null;
+  if (adminExamConfig && userSubjects.length === 4) {
+    // Assume adminExamConfig.subjects is an array of objects { name, questions }
+    filteredSubjects = adminExamConfig.subjects.filter((sub) =>
+      userSubjects.includes(sub.name)
+    );
+    currentSubjectObj = filteredSubjects[currentSubjectIndex];
+    currentSubjectQuestions = currentSubjectObj ? currentSubjectObj.questions : [];
+    currentQuestion = currentSubjectQuestions[currentQuestionIndex];
+  }
+
+  // 7. Helper: check if a question is answered.
+  const isAnswered = (subjectName, questionId) => {
+    return answers[subjectName] && answers[subjectName][questionId];
+  };
+
+  // 8. Handle answer selection.
   const handleAnswerSelect = (questionId, option) => {
+    if (!currentSubjectObj) return;
     setAnswers((prev) => ({
       ...prev,
-      [currentSubject]: {
-        ...prev[currentSubject],
+      [currentSubjectObj.name]: {
+        ...prev[currentSubjectObj.name],
         [questionId]: option,
       },
     }));
   };
 
-  // Navigate to a specific question via the grid.
+  // 9. Grid navigation: jump to specific question.
   const handleGoToQuestion = (index) => {
     setCurrentQuestionIndex(index);
   };
 
-  // Previous and Next buttons.
+  // 10. Previous and Next navigation.
   const handlePrevious = () => {
     setCurrentQuestionIndex((prev) => (prev > 0 ? prev - 1 : 0));
   };
 
   const handleNext = () => {
-    setCurrentQuestionIndex((prev) => (prev < questions.length - 1 ? prev + 1 : prev));
+    setCurrentQuestionIndex((prev) =>
+      prev < currentSubjectQuestions.length - 1 ? prev + 1 : prev
+    );
   };
 
-  // Allow switching subjects.
+  // 11. Subject navigation.
   const handleSubjectChange = (index) => {
     setCurrentSubjectIndex(index);
+    setCurrentQuestionIndex(0);
   };
 
-  const currentQuestion = questions[currentQuestionIndex];
-
-  // Check if a question is answered.
-  const isAnswered = (subject, questionId) => {
-    return answers[subject] && answers[subject][questionId];
-  };
-
-  // Get user's answer for the current question.
-  const userAnswer =
-    answers[currentSubject] ? answers[currentSubject][currentQuestion?.id] : null;
-
-  // Calculate progress percentage for the current subject.
+  // 12. Calculate progress percentage.
   const progressPercent =
-    questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
+    currentSubjectQuestions.length > 0
+      ? ((currentQuestionIndex + 1) / currentSubjectQuestions.length) * 100
+      : 0;
 
-  // Submit exam: store answers and navigate to dashboard.
+  // 13. Get user's answer for the current question.
+  const userAnswer =
+    currentSubjectObj && currentQuestion
+      ? answers[currentSubjectObj.name]
+        ? answers[currentSubjectObj.name][currentQuestion.id]
+        : null
+      : null;
+
+  // 14. Submit exam: store answers and navigate to dashboard.
   const handleSubmitExam = () => {
     localStorage.setItem("examAnswers", JSON.stringify(answers));
     navigate("/dashboard");
   };
 
+  if (loading) {
+    return <div className="container"><p>Loading exam...</p></div>;
+  }
+  if (!adminExamConfig) {
+    return <div className="container"><p>Error loading exam configuration.</p></div>;
+  }
+
   return (
     <div className="container exam-container">
       {/* Timer and Subject Navigation */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2>{currentSubject} Exam</h2>
+        <h2>{currentSubjectObj ? currentSubjectObj.name : ""} Exam</h2>
         <div className="timer" style={{ fontSize: "1.5rem", fontWeight: "bold" }}>
           {formatTime(timeLeft)}
         </div>
       </div>
 
+      {/* Subject Navigation */}
       <div className="subject-nav" style={{ marginBottom: "1rem" }}>
-        {subjects.map((sub, idx) => (
+        {filteredSubjects.map((sub, idx) => (
           <button
-            key={sub}
+            key={sub.name}
             onClick={() => handleSubjectChange(idx)}
             style={{
               background: idx === currentSubjectIndex ? "var(--accent-dark)" : "var(--accent-color)",
@@ -126,7 +187,7 @@ const ExamPage = () => {
               cursor: "pointer",
             }}
           >
-            {sub}
+            {sub.name}
           </button>
         ))}
       </div>
@@ -147,7 +208,7 @@ const ExamPage = () => {
       {/* Current Question Display */}
       <div className="question-section">
         <h3>
-          Question {currentQuestionIndex + 1} of {questions.length}
+          Question {currentQuestionIndex + 1} of {currentSubjectQuestions.length}
         </h3>
         {currentQuestion ? (
           <div>
@@ -185,7 +246,7 @@ const ExamPage = () => {
         <button onClick={handlePrevious} disabled={currentQuestionIndex === 0}>
           Previous
         </button>
-        <button onClick={handleNext} disabled={currentQuestionIndex === questions.length - 1}>
+        <button onClick={handleNext} disabled={currentQuestionIndex === currentSubjectQuestions.length - 1}>
           Next
         </button>
       </div>
@@ -194,9 +255,9 @@ const ExamPage = () => {
       <div className="grid-navigation" style={{ marginTop: "1rem" }}>
         <h4>Jump to Question:</h4>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: "0.5rem" }}>
-          {questions.map((q, idx) => (
+          {currentSubjectQuestions.map((q, idx) => (
             <div
-              key={q.id}
+              key={q.id || idx}
               className="grid-box"
               onClick={() => handleGoToQuestion(idx)}
               style={{
@@ -205,11 +266,11 @@ const ExamPage = () => {
                 textAlign: "center",
                 cursor: "pointer",
                 position: "relative",
-                background: isAnswered(currentSubject, q.id) ? "#e0ffe0" : "#fff",
+                background: isAnswered(currentSubjectObj.name, q.id) ? "#e0ffe0" : "#fff",
               }}
             >
               {idx + 1}
-              {isAnswered(currentSubject, q.id) && (
+              {isAnswered(currentSubjectObj.name, q.id) && (
                 <span className="tick">&#10004;</span>
               )}
             </div>
@@ -223,6 +284,11 @@ const ExamPage = () => {
       <button onClick={handleSubmitExam} style={{ marginTop: "1rem" }}>
         Submit Exam
       </button>
+      {examMessage && (
+        <p style={{ marginTop: "1rem", whiteSpace: "pre-wrap", color: "green" }}>
+          {examMessage}
+        </p>
+      )}
     </div>
   );
 };
