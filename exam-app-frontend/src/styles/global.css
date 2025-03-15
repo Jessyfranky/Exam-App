@@ -221,6 +221,90 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 
+.feedback-message {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 5px;
+}
+
+.feedback-message.correct {
+  color: #155724;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+}
+
+.feedback-message.wrong {
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+}
+
+.feedback-message {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 5px;
+}
+.feedback-message.correct {
+  color: #155724;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+}
+.feedback-message.wrong {
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+}
+
+.subject-nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.grid-navigation .grid-box {
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.grid-navigation .grid-box:hover {
+  background: #f0f0f0;
+}
+
+.tick {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  color: green;
+  animation: tickAnim 0.5s ease-in-out;
+}
+@keyframes tickAnim {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.navigation-buttons button {
+  padding: 0.5rem 1rem;
+  margin: 0 0.5rem;
+  border: none;
+  border-radius: 5px;
+  background: var(--accent-color);
+  color: #fff;
+  cursor: pointer;
+}
+.navigation-buttons button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
 
 @keyframes tickAnim {
   0% { transform: scale(0.5); opacity: 0; }
@@ -243,25 +327,6 @@ body {
 .container:hover {
   transform: translateY(-3px);
   box-shadow: 0 5px 15px var(--shadow-color);
-}
-.feedback-message {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin-top: 0.5rem;
-  padding: 0.5rem;
-  border-radius: 5px;
-}
-
-.feedback-message.correct {
-  color: #155724;
-  background-color: #d4edda;
-  border: 1px solid #c3e6cb;
-}
-
-.feedback-message.wrong {
-  color: #721c24;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
 }
 
 h2, h3, h4 {
