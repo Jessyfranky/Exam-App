@@ -1,7 +1,7 @@
 // src/pages/AdminPanel.js
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createExamConfig } from "../services/adminApi";
+import { createExamConfig } from "../services/adminApi.js";
 import "../styles/global.css";
 
 // Fixed subjects list.
