@@ -9,34 +9,61 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Try to read examId from query parameter; if not, from localStorage.
-  const examIdFromQuery = new URLSearchParams(location.search).get("examId") || localStorage.getItem("examId") || "";
-
+  // State to hold user's selected subjects.
   const [selectedSubjects, setSelectedSubjects] = useState([]);
   const [subjectError, setSubjectError] = useState("");
+  // Flag indicating whether subject selection is complete.
   const [selectionCompleted, setSelectionCompleted] = useState(false);
+  // State for exam scores.
   const [examScores, setExamScores] = useState({});
-  const [examLinkInput, setExamLinkInput] = useState("");
+  // Message state.
   const [message, setMessage] = useState("");
 
-  // On mount, load user's subject selection.
+  // On mount, check localStorage for subject selection.
   useEffect(() => {
     const storedSubjects = JSON.parse(localStorage.getItem("selectedSubjects"));
     if (storedSubjects && storedSubjects.length === 4) {
       setSelectedSubjects(storedSubjects);
       setSelectionCompleted(true);
     } else {
+      // For new users, default to English (compulsory).
       setSelectedSubjects(["English"]);
     }
   }, []);
 
+  // On mount, if exam answers and admin exam configuration exist, compute scores.
+  useEffect(() => {
+    const examAnswers = JSON.parse(localStorage.getItem("examAnswers"));
+    const adminExamConfig = JSON.parse(localStorage.getItem("adminExamConfig"));
+    if (examAnswers && adminExamConfig && adminExamConfig.subjects) {
+      // Compute scores for subjects that the user selected.
+      const scores = {};
+      adminExamConfig.subjects.forEach((subject) => {
+        // Only compute score if this subject was selected.
+        if (selectedSubjects.includes(subject.name)) {
+          const userAnswers = examAnswers[subject.name] || {};
+          const total = subject.questions.length;
+          let correct = 0;
+          subject.questions.forEach((q) => {
+            if (userAnswers[q.id] && userAnswers[q.id] === q.correctAnswer) {
+              correct++;
+            }
+          });
+          // You can compute a percentage or simply the raw count.
+          scores[subject.name] = `${correct} / ${total} (${Math.round((correct/total)*100)}%)`;
+        }
+      });
+      setExamScores(scores);
+    }
+  }, [selectedSubjects]);
+
   // Handler to toggle subject selection (except English).
   const handleToggleSubject = (subject) => {
-    if (selectionCompleted) return;
-    if (subject === "English") return;
+    if (selectionCompleted) return; // Locked once saved.
+    if (subject === "English") return; // English is compulsory.
     
     if (selectedSubjects.includes(subject)) {
-      setSelectedSubjects(selectedSubjects.filter(s => s !== subject));
+      setSelectedSubjects(selectedSubjects.filter((s) => s !== subject));
     } else {
       if (selectedSubjects.length >= 4) {
         setSubjectError("You can only select 4 subjects (English plus 3 others).");
@@ -62,42 +89,16 @@ const Dashboard = () => {
     setMessage("Subjects saved successfully.");
   };
 
-  // Handler to load exam from exam ID.
-  const handleLoadExam = () => {
-    let examId = examIdFromQuery;
-    // If no examId is found in query or localStorage, check input field.
-    if (!examId && examLinkInput.trim()) {
-      try {
-        // If the input is a full URL, extract the exam ID.
-        const url = new URL(examLinkInput.trim());
-        const segments = url.pathname.split("/");
-        examId = segments[segments.length - 1];
-      } catch (error) {
-        // If not a valid URL, assume the input is directly the exam ID.
-        examId = examLinkInput.trim();
-      }
-    }
-    if (!examId) {
-      setMessage("No exam link found. Please enter an exam link or exam ID.");
-      return;
-    }
-    // Optionally, save the examId to localStorage for later use.
-    localStorage.setItem("examId", examId);
-    navigate(`/exam/${examId}`);
-  };
-
-  // Handler for retaking exam.
+  // "Retake Exam" clears exam answers (preserving subject selection).
   const handleRetakeExam = () => {
     localStorage.removeItem("examAnswers");
     setExamScores({});
-    if (examIdFromQuery) {
-      navigate(`/exam/${examIdFromQuery}`);
-    } else {
-      setMessage("No exam link found.");
-    }
+    // Navigate to exam page using a stored exam ID if available.
+    // For this snippet, we assume exam ID is provided elsewhere.
+    navigate("/exam/your_exam_id_here"); // Replace with your exam navigation logic.
   };
 
-  // Logout clears all storage.
+  // Logout: clear all localStorage.
   const handleLogout = () => {
     localStorage.clear();
     navigate("/login");
@@ -113,8 +114,12 @@ const Dashboard = () => {
         <div className="subject-selection-section">
           <h3>Select 4 Subjects (English is compulsory)</h3>
           <div className="subject-list">
-            {availableSubjects.map(subject => (
-              <label key={subject} className="subject-item" style={{ cursor: subject === "English" ? "not-allowed" : "pointer" }}>
+            {availableSubjects.map((subject) => (
+              <label
+                key={subject}
+                className="subject-item"
+                style={{ cursor: subject === "English" ? "not-allowed" : "pointer" }}
+              >
                 <input
                   type="checkbox"
                   checked={selectedSubjects.includes(subject)}
@@ -133,28 +138,31 @@ const Dashboard = () => {
         <div className="exam-ready-section">
           <h3>Your Selected Subjects</h3>
           <div className="subject-list">
-            {selectedSubjects.map(subject => (
+            {selectedSubjects.map((subject) => (
               <div key={subject} className="subject-item">
                 {subject}
               </div>
             ))}
           </div>
           <p>Your subjects have been set. You cannot change them now.</p>
-          <div style={{ marginTop: "1rem" }}>
-            <input
-              type="text"
-              placeholder="Enter Exam Link or Exam ID"
-              value={examLinkInput}
-              onChange={(e) => setExamLinkInput(e.target.value)}
-              style={{ width: "70%", marginRight: "1rem" }}
-            />
-            <button onClick={handleLoadExam}>Take Exam</button>
-          </div>
-          <button onClick={handleRetakeExam} style={{ marginTop: "1rem" }}>Retake Exam</button>
+          <button onClick={handleRetakeExam}>Retake Exam</button>
         </div>
       )}
 
-      {message && <p style={{ marginTop: "1rem", color: "red" }}>{message}</p>}
+      {/* Exam Scores Section */}
+      {Object.keys(examScores).length > 0 && (
+        <div className="score-section" style={{ marginTop: "2rem" }}>
+          <h3>Your Exam Scores</h3>
+          {Object.keys(examScores).map((subject) => (
+            <div key={subject} className="score-item">
+              <h4>{subject}</h4>
+              <p>Score: {examScores[subject]}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {message && <p style={{ marginTop: "1rem", color: "green" }}>{message}</p>}
       <hr />
       <button onClick={handleLogout}>Logout</button>
     </div>
