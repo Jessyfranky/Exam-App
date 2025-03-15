@@ -9,6 +9,10 @@ const RegisterPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  // Role selection defaults to "user"
+  const [role, setRole] = useState("user");
+  // Field for admin code; only used if role is "admin"
+  const [adminCode, setAdminCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,12 +28,31 @@ const RegisterPage = () => {
       setError("Passwords do not match.");
       return;
     }
+    // If admin is selected, ensure the admin code is provided.
+    if (role === "admin" && !adminCode.trim()) {
+      setError("Admin code is required for admin registration.");
+      return;
+    }
 
     setLoading(true);
     try {
-      // Register user with default role "user"
-      await registerUser(name, email, password, "user");
-      navigate("/login");
+      // Send adminCode if role is admin.
+      const data = await registerUser(
+        name,
+        email,
+        password,
+        role,
+        role === "admin" ? adminCode.trim() : undefined
+      );
+      // Store the user data.
+      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("token", data.token);
+      // If the user is an admin, navigate directly to the admin panel.
+      if (role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/login");
+      }
     } catch (err) {
       setError(err.message || "Registration failed.");
     }
@@ -38,7 +61,10 @@ const RegisterPage = () => {
 
   return (
     <div className="container login-container">
-      <h2>User Registration</h2>
+      <h2>Register</h2>
+      <p style={{ marginBottom: "1rem" }}>
+        Register as <strong>{role === "admin" ? "Admin" : "User"}</strong>
+      </p>
       {error && <p className="error" style={{ color: "red" }}>{error}</p>}
       <form onSubmit={handleRegister}>
         <input
@@ -65,6 +91,39 @@ const RegisterPage = () => {
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
+        {/* Role Selection */}
+        <div style={{ margin: "1rem 0" }}>
+          <label style={{ marginRight: "1rem" }}>
+            <input
+              type="radio"
+              name="role"
+              value="user"
+              checked={role === "user"}
+              onChange={(e) => setRole(e.target.value)}
+            />
+            User
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="role"
+              value="admin"
+              checked={role === "admin"}
+              onChange={(e) => setRole(e.target.value)}
+            />
+            Admin
+          </label>
+        </div>
+        {/* Admin Code Field: Only visible if admin is selected */}
+        {role === "admin" && (
+          <input
+            type="text"
+            placeholder="Enter Admin Code"
+            value={adminCode}
+            onChange={(e) => setAdminCode(e.target.value)}
+            style={{ marginBottom: "1rem" }}
+          />
+        )}
         <button type="submit" disabled={loading}>
           {loading ? "Registering..." : "Register"}
         </button>
