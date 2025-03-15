@@ -11,15 +11,6 @@ export const createExamConfig = async (configData) => {
   }
 };
 
-export const fetchExamConfigById = async (configId) => {
-    try {
-      const response = await axios.get(`${ADMIN_API_URL}/admin/config/${configId}`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  };
-
 // Save a subject's configuration
 export const saveSubjectConfig = async (subjectConfig) => {
   try {
@@ -41,6 +32,17 @@ export const fetchUsers = async () => {
     throw error.response?.data || error;
   }
 };
+
+export const fetchExamConfigById = async (configId) => {
+  try {
+    const response = await axios.get(`${ADMIN_API_URL}/admin/config/${configId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Detailed error fetching exam config:", error.response?.data || error);
+    throw error.response?.data || error;
+  }
+};
+
 
 
 export const fetchQuestions = async () => {
