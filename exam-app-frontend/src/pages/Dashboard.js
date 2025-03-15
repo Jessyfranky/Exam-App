@@ -8,7 +8,7 @@ const availableSubjects = ["English", "Maths", "Chemistry", "Biology", "Physics"
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
+  
   // Try to get examId from query parameter; if not, from localStorage.
   const examIdFromQuery =
     new URLSearchParams(location.search).get("examId") ||
@@ -42,15 +42,23 @@ const Dashboard = () => {
     }
   }, [examIdFromQuery]);
 
-  // Compute exam scores if examAnswers and admin exam configuration exist.
+  // Compute exam scores if examAnswers and adminExamConfig exist.
   useEffect(() => {
     const examAnswers = JSON.parse(localStorage.getItem("examAnswers"));
-    const adminExamConfig = JSON.parse(
-      localStorage.getItem("adminExamConfig")
-    );
+    const adminExamConfig = JSON.parse(localStorage.getItem("adminExamConfig"));
     if (examAnswers && adminExamConfig && adminExamConfig.subjects) {
+      // Convert subjects to an array if it's an object.
+      let subjectsArray = [];
+      if (Array.isArray(adminExamConfig.subjects)) {
+        subjectsArray = adminExamConfig.subjects;
+      } else {
+        subjectsArray = Object.keys(adminExamConfig.subjects).map((key) => ({
+          name: key,
+          questions: adminExamConfig.subjects[key],
+        }));
+      }
       let scores = {};
-      adminExamConfig.subjects.forEach((sub) => {
+      subjectsArray.forEach((sub) => {
         if (selectedSubjects.includes(sub.name)) {
           let correct = 0;
           let total = sub.questions.length;
@@ -76,14 +84,12 @@ const Dashboard = () => {
   const handleToggleSubject = (subject) => {
     if (selectionCompleted) return;
     if (subject === "English") return;
-
+    
     if (selectedSubjects.includes(subject)) {
       setSelectedSubjects(selectedSubjects.filter((s) => s !== subject));
     } else {
       if (selectedSubjects.length >= 4) {
-        setSubjectError(
-          "You can only select 4 subjects (English plus 3 others)."
-        );
+        setSubjectError("You can only select 4 subjects (English plus 3 others).");
         return;
       }
       setSelectedSubjects([...selectedSubjects, subject]);
@@ -94,9 +100,7 @@ const Dashboard = () => {
   // Handler to save subjects.
   const handleSaveSubjects = () => {
     if (selectedSubjects.length !== 4 || !selectedSubjects.includes("English")) {
-      setSubjectError(
-        "Please select exactly 4 subjects (English plus 3 others)."
-      );
+      setSubjectError("Please select exactly 4 subjects (English plus 3 others).");
       return;
     }
     localStorage.setItem("selectedSubjects", JSON.stringify(selectedSubjects));
@@ -145,7 +149,7 @@ const Dashboard = () => {
     <div className="container">
       <h2>Dashboard</h2>
       <p>Welcome! Please select your preferred exam subjects.</p>
-
+      
       {!selectionCompleted ? (
         <div className="subject-selection-section">
           <h3>Select 4 Subjects (English is compulsory)</h3>
@@ -170,9 +174,7 @@ const Dashboard = () => {
             ))}
           </div>
           {subjectError && (
-            <p className="error" style={{ color: "red" }}>
-              {subjectError}
-            </p>
+            <p className="error" style={{ color: "red" }}>{subjectError}</p>
           )}
           <button onClick={handleSaveSubjects}>Save Subjects</button>
         </div>
@@ -181,9 +183,7 @@ const Dashboard = () => {
           <h3>Your Selected Subjects</h3>
           <div className="subject-list">
             {selectedSubjects.map((subject) => (
-              <div key={subject} className="subject-item">
-                {subject}
-              </div>
+              <div key={subject} className="subject-item">{subject}</div>
             ))}
           </div>
           <p>Your subjects have been set and cannot be changed now.</p>
@@ -207,9 +207,7 @@ const Dashboard = () => {
         <div className="exam-scores-section" style={{ marginTop: "2rem" }}>
           <h3>Your Exam Scores</h3>
           {Object.entries(examScores).map(([subject, score]) => (
-            <p key={subject}>
-              {subject}: {score}
-            </p>
+            <p key={subject}>{subject}: {score}</p>
           ))}
         </div>
       )}
