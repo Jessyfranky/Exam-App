@@ -23,36 +23,34 @@ const Dashboard = () => {
     if (storedSubjects && storedSubjects.length === 4) {
       setSelectedSubjects(storedSubjects);
       setSelectionCompleted(true);
-    } else {
-      setSelectedSubjects(["English"]);
     }
   }, []);
 
   useEffect(() => {
-    const examAnswers = JSON.parse(localStorage.getItem("examAnswers"));
-    const adminExamConfig = JSON.parse(localStorage.getItem("adminExamConfig"));
-    if (examAnswers && adminExamConfig && adminExamConfig.subjects) {
-      let scores = {};
-      adminExamConfig.subjects.forEach((sub) => {
-        if (selectedSubjects.includes(sub.name)) {
-          let correct = 0;
-          let total = sub.questions.length;
-          sub.questions.forEach((q) => {
-            if (examAnswers[sub.name] && examAnswers[sub.name][q.id] === q.correctAnswer) {
-              correct++;
-            }
-          });
-          scores[sub.name] = `${correct} / ${total} (${Math.round((correct/total)*100)}%)`;
-        }
-      });
-      setExamScores(scores);
-      localStorage.setItem("examScores", JSON.stringify(scores));
+    if (examIdFromQuery) {
+      localStorage.setItem("examId", examIdFromQuery);
     }
-  }, [selectedSubjects]);
+  }, [examIdFromQuery]);
+
+  const handleToggleSubject = (subject) => {
+    if (selectionCompleted) return;
+    if (subject === "English") return;
+    
+    if (selectedSubjects.includes(subject)) {
+      setSelectedSubjects(selectedSubjects.filter(s => s !== subject));
+    } else {
+      if (selectedSubjects.length >= 4) {
+        setSubjectError("You can only select 4 subjects (English plus 3 others). ");
+        return;
+      }
+      setSelectedSubjects([...selectedSubjects, subject]);
+    }
+    setSubjectError("");
+  };
 
   const handleSaveSubjects = () => {
-    if (selectedSubjects.length !== 4) {
-      setSubjectError("Please select exactly 4 subjects (English plus 3 others). ");
+    if (selectedSubjects.length !== 4 || !selectedSubjects.includes("English")) {
+      setSubjectError("Please select exactly 4 subjects (English plus 3 others).");
       return;
     }
     localStorage.setItem("selectedSubjects", JSON.stringify(selectedSubjects));
@@ -72,7 +70,6 @@ const Dashboard = () => {
 
   const handleRetakeExam = () => {
     localStorage.removeItem("examAnswers");
-    localStorage.removeItem("examScores");
     setExamScores({});
     if (examIdFromQuery) {
       navigate(`/exam/${examIdFromQuery}`);
@@ -82,74 +79,70 @@ const Dashboard = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     navigate("/login");
   };
 
   return (
     <div className="container">
       <h2>Dashboard</h2>
-      <p>Welcome! Your selected subjects and exam scores are below.</p>
+      <p>Welcome! Please select your preferred exam subjects.</p>
 
-      {selectionCompleted ? (
-        <div>
-          <h3>Your Selected Subjects</h3>
-          <div className="subject-list">
-            {selectedSubjects.map(subject => (
-              <div key={subject} className="subject-item">{subject}</div>
-            ))}
-          </div>
-          <p>Your subjects have been set and cannot be changed.</p>
-        </div>
-      ) : (
-        <div>
+      {!selectionCompleted ? (
+        <div className="subject-selection-section">
           <h3>Select 4 Subjects (English is compulsory)</h3>
           <div className="subject-list">
             {availableSubjects.map(subject => (
-              <label key={subject} className="subject-item">
+              <label key={subject} className="subject-item" style={{ cursor: subject === "English" ? "not-allowed" : "pointer" }}>
                 <input
                   type="checkbox"
                   checked={selectedSubjects.includes(subject)}
-                  onChange={() => {
-                    if (selectionCompleted || subject === "English") return;
-                    setSelectedSubjects(prev => prev.includes(subject)
-                      ? prev.filter(s => s !== subject)
-                      : prev.length < 4 ? [...prev, subject] : prev);
-                  }}
-                  disabled={selectionCompleted || subject === "English"}
+                  onChange={() => handleToggleSubject(subject)}
+                  disabled={subject === "English"}
+                  style={{ marginRight: "0.5rem" }}
                 />
                 {subject} {subject === "English" && "(Compulsory)"}
               </label>
             ))}
           </div>
           {subjectError && <p className="error" style={{ color: "red" }}>{subjectError}</p>}
-          <button onClick={handleSaveSubjects} disabled={selectionCompleted}>Save Subjects</button>
+          <button onClick={handleSaveSubjects}>Save Subjects</button>
+        </div>
+      ) : (
+        <div className="exam-ready-section">
+          <h3>Your Selected Subjects</h3>
+          <div className="subject-list">
+            {selectedSubjects.map(subject => (
+              <div key={subject} className="subject-item">{subject}</div>
+            ))}
+          </div>
+          <p>Your subjects have been set. You cannot change them now.</p>
+          <div style={{ marginTop: "1rem" }}>
+            <input
+              type="text"
+              placeholder="Enter Exam Link or Exam ID"
+              value={examLinkInput}
+              onChange={(e) => setExamLinkInput(e.target.value)}
+              style={{ width: "70%", marginRight: "1rem" }}
+            />
+            <button onClick={handleLoadExam}>Take Exam</button>
+          </div>
+          <button onClick={handleRetakeExam} style={{ marginTop: "1rem" }}>Retake Exam</button>
         </div>
       )}
 
-      <div style={{ marginTop: "1rem" }}>
-        <input
-          type="text"
-          placeholder="Enter Exam Link or Exam ID"
-          value={examLinkInput}
-          onChange={(e) => setExamLinkInput(e.target.value)}
-        />
-        <button onClick={handleLoadExam}>Take Exam</button>
-      </div>
-
       {Object.keys(examScores).length > 0 && (
-        <div className="score-section" style={{ marginTop: "2rem" }}>
+        <div className="exam-scores-section">
           <h3>Your Exam Scores</h3>
-          {Object.keys(examScores).map(subject => (
-            <div key={subject} className="score-item">
-              <h4>{subject}</h4>
-              <p>Score: {examScores[subject]}</p>
-            </div>
+          {Object.entries(examScores).map(([subject, score]) => (
+            <p key={subject}>{subject}: {score}/10</p>
           ))}
         </div>
       )}
 
-      {message && <p style={{ color: "red" }}>{message}</p>}
-      <button onClick={handleRetakeExam} style={{ marginTop: "1rem" }}>Retake Exam</button>
+      {message && <p style={{ marginTop: "1rem", color: "red" }}>{message}</p>}
+      <hr />
       <button onClick={handleLogout}>Logout</button>
     </div>
   );
