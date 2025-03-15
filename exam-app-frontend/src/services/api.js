@@ -1,24 +1,33 @@
 import axios from "axios";
 
-const API_URL = "https://exam-app-043c.onrender.com/api";
+const API_URL = "http://localhost:5000/api";
 
-export const registerUser = async (name, email, password, role) => {
+export const registerUser = async (name, email, password, role, adminCode) => {
   try {
-    const response = await axios.post(`${API_URL}/auth/register`, { name, email, password, role });
+    const payload = { name, email, password, role };
+    if (role === "admin") {
+      payload.adminCode = adminCode; // Include adminCode if role is admin.
+    }
+    const response = await axios.post(`${API_URL}/auth/register`, payload);
     return response.data;
   } catch (error) {
     throw error.response?.data || error;
   }
 };
 
-export const loginUser = async (email, password, role) => {
-  try {
-    const response = await axios.post(`${API_URL}/auth/login`, { email, password, role });
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error;
-  }
-};
+  export const loginUser = async (email, password, role, adminCode) => {
+    try {
+      const payload = { email, password, role };
+      if (role === "admin") {
+        payload.adminCode = adminCode;
+      }
+      const response = await axios.post(`${API_URL}/auth/login`, payload);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  };
+  
 
 // Exam Submission API
 export const submitExam = async (userId, answers) => {
