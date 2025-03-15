@@ -1,69 +1,71 @@
-import React, { useState } from "react";
+// src/pages/AdminPanel.js
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createExamConfig, saveSubjectConfig } from "../services/adminApi.js"; // Ensure saveSubjectConfig exists
+import { createExamConfig } from "../services/adminApi.js"; // API function to save exam configuration
 import "../styles/global.css";
 
-// Admin can add any subject (not limited to a predefined list)
+// Fixed subjects list.
+const fixedSubjects = ["English", "Maths", "Physics", "Chemistry", "Biology"];
+
 const AdminPanel = () => {
   const navigate = useNavigate();
 
-  // Overall exam configuration state
+  // Always call hooks unconditionally.
+  const [adminName, setAdminName] = useState("");
   const [examConfig, setExamConfig] = useState({
-    adminId: "", // Ideally set from logged-in admin info
-    timer: 600,  // Default timer in seconds; admin can update
-    subjects: {} // Format: { subjectName: [question, question, ...], ... }
+    adminName: "",
+    timer: 600,
+    subjects: fixedSubjects.reduce((acc, subject) => {
+      acc[subject] = [];
+      return acc;
+    }, {})
   });
-
-  // State for new subject addition
-  const [newSubject, setNewSubject] = useState("");
-  // List of subjects that have been added (keys of examConfig.subjects)
-  const subjectsAdded = Object.keys(examConfig.subjects);
-  // State for current subject selected for adding questions
-  const [currentSubject, setCurrentSubject] = useState("");
-  // State for current question inputs for current subject
+  const [currentSubject, setCurrentSubject] = useState(fixedSubjects[0]);
   const [currentQuestion, setCurrentQuestion] = useState({
-    questionText: "",
+    question: "",
     options: ["", "", "", ""],
     correctAnswer: ""
   });
-  
+  // When a question is loaded from grid, store its index here (null means adding a new question).
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(null);
   const [message, setMessage] = useState("");
   const [examId, setExamId] = useState(null);
 
-  // Add a new subject to the configuration
-  const handleAddSubject = () => {
-    const trimmedSubject = newSubject.trim();
-    if (!trimmedSubject) {
-      setMessage("Please enter a subject name.");
-      return;
+  // On mount, load admin's name and any saved exam configuration.
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user && user.name) {
+      setAdminName(user.name);
+      setExamConfig((prev) => ({ ...prev, adminName: user.name }));
     }
-    if (examConfig.subjects[trimmedSubject]) {
-      setMessage("Subject already exists.");
-      return;
+    // Load saved exam configuration if available.
+    const storedConfig = localStorage.getItem("adminExamConfig");
+    if (storedConfig) {
+      setExamConfig(JSON.parse(storedConfig));
     }
-    setExamConfig(prev => ({
-      ...prev,
-      subjects: { ...prev.subjects, [trimmedSubject]: [] }
-    }));
-    setMessage(`Subject "${trimmedSubject}" added.`);
-    setNewSubject("");
-    setCurrentSubject(trimmedSubject);
-  };
+  }, []);
 
-  // Change the current subject for adding questions
-  const handleSetCurrentSubject = subject => {
+  // If no adminName is found, show error.
+  if (!adminName) {
+    return (
+      <div className="container">
+        <h2>Admin Panel</h2>
+        <p>Admin not found. Please log in as admin.</p>
+      </div>
+    );
+  }
+
+  // Handler to switch the current subject.
+  const handleSubjectChange = (subject) => {
     setCurrentSubject(subject);
     setMessage("");
-    setCurrentQuestion({
-      questionText: "",
-      options: ["", "", "", ""],
-      correctAnswer: ""
-    });
+    setCurrentQuestion({ question: "", options: ["", "", "", ""], correctAnswer: "" });
+    setCurrentQuestionIndex(null);
   };
 
-  // Handle changes for question text and options
-  const handleQuestionChange = e => {
-    setCurrentQuestion({ ...currentQuestion, questionText: e.target.value });
+  // Handlers for input changes.
+  const handleQuestionChange = (e) => {
+    setCurrentQuestion({ ...currentQuestion, question: e.target.value });
   };
 
   const handleOptionChange = (index, value) => {
@@ -72,21 +74,17 @@ const AdminPanel = () => {
     setCurrentQuestion({ ...currentQuestion, options: newOptions });
   };
 
-  const handleCorrectAnswerChange = e => {
+  const handleCorrectAnswerChange = (e) => {
     setCurrentQuestion({ ...currentQuestion, correctAnswer: e.target.value });
   };
 
-  // Add the current question to the current subject
+  // Add the current question to the selected subject.
   const handleAddQuestion = () => {
-    if (!currentSubject) {
-      setMessage("Please select a subject first.");
-      return;
-    }
-    if (!currentQuestion.questionText.trim()) {
+    if (!currentQuestion.question.trim()) {
       setMessage("Please enter the question text.");
       return;
     }
-    if (currentQuestion.options.some(opt => !opt.trim())) {
+    if (currentQuestion.options.some((opt) => !opt.trim())) {
       setMessage("Please fill in all options.");
       return;
     }
@@ -94,80 +92,86 @@ const AdminPanel = () => {
       setMessage("Please specify the correct answer.");
       return;
     }
-    setExamConfig(prev => ({
-      ...prev,
-      subjects: {
+    setExamConfig((prev) => {
+      const updatedSubjects = {
         ...prev.subjects,
         [currentSubject]: [...prev.subjects[currentSubject], currentQuestion]
-      }
-    }));
-    setMessage(`Question added to ${currentSubject}.`);
-    // Reset question inputs
-    setCurrentQuestion({
-      questionText: "",
-      options: ["", "", "", ""],
-      correctAnswer: ""
-    });
-  };
-
-  // Save the current subject configuration to the database
-  const handleSaveSubject = async () => {
-    if (!currentSubject) {
-      setMessage("No subject selected to save.");
-      return;
-    }
-    const subjectQuestions = examConfig.subjects[currentSubject];
-    if (!subjectQuestions || subjectQuestions.length === 0) {
-      setMessage("Please add at least one question before saving this subject.");
-      return;
-    }
-    try {
-      const subjectConfig = {
-        adminId: "your_admin_id_here", // Replace with actual admin ID from logged-in data
-        subject: currentSubject,
-        questions: subjectQuestions,
-        timer: examConfig.timer
       };
-      const savedSubject = await saveSubjectConfig(subjectConfig);
-      setMessage(`Subject "${currentSubject}" saved successfully.`);
-      // Optionally mark the subject as saved (or remove it from unsaved list)
-    } catch (error) {
-      console.error("Error saving subject:", error);
-      setMessage("Failed to save subject configuration.");
-    }
+      const newConfig = { ...prev, subjects: updatedSubjects };
+      // Save updated configuration in localStorage.
+      localStorage.setItem("adminExamConfig", JSON.stringify(newConfig));
+      return newConfig;
+    });
+    setMessage(`Question ${examConfig.subjects[currentSubject].length + 1} added to ${currentSubject}.`);
+    setCurrentQuestion({ question: "", options: ["", "", "", ""], correctAnswer: "" });
+    setCurrentQuestionIndex(null);
   };
 
-  // Review the entire exam: ensure at least one subject has been saved, then generate a unique exam ID.
-  const handleReviewExam = async () => {
-    const hasAnySubject = Object.keys(examConfig.subjects).some(
-      subject => examConfig.subjects[subject].length > 0
-    );
-    if (!hasAnySubject) {
-      setMessage("Please save at least one subject before reviewing the exam.");
-      return;
-    }
+  // Update an existing question loaded from grid.
+  const handleUpdateQuestion = () => {
+    if (currentQuestionIndex === null) return;
+    setExamConfig((prev) => {
+      const updatedQuestions = [...prev.subjects[currentSubject]];
+      updatedQuestions[currentQuestionIndex] = currentQuestion;
+      const newSubjects = { ...prev.subjects, [currentSubject]: updatedQuestions };
+      const newConfig = { ...prev, subjects: newSubjects };
+      localStorage.setItem("adminExamConfig", JSON.stringify(newConfig));
+      return newConfig;
+    });
+    setMessage(`Question ${currentQuestionIndex + 1} updated in ${currentSubject}.`);
+    setCurrentQuestion({ question: "", options: ["", "", "", ""], correctAnswer: "" });
+    setCurrentQuestionIndex(null);
+  };
+
+  // Clear current question selection.
+  const handleClearQuestion = () => {
+    setCurrentQuestion({ question: "", options: ["", "", "", ""], correctAnswer: "" });
+    setCurrentQuestionIndex(null);
+  };
+
+  // Grid navigation: load question from grid into input fields.
+  const handleGoToQuestion = (index) => {
+    setCurrentQuestionIndex(index);
+    const questionToLoad = examConfig.subjects[currentSubject][index];
+    setCurrentQuestion(questionToLoad);
+  };
+
+  // Generate exam link: save configuration to backend and get examId.
+  const handleGenerateExamLink = async () => {
     try {
-      // Generate a unique exam ID (or call an API to save the complete exam config)
-      const uniqueExamId = "EXAM-" + Math.floor(Math.random() * 1000000) + "-" + Date.now();
-      // Here, you might update the exam configuration in the database.
-      // For demonstration, we simply set the examId locally.
-      setExamId(uniqueExamId);
-      setMessage(`Exam configuration complete. Share this Exam ID with users: ${uniqueExamId}`);
+      const subjectsArray = Object.keys(examConfig.subjects).map((subjectName) => ({
+        name: subjectName,
+        questions: examConfig.subjects[subjectName]
+      }));
+      const configToSend = {
+        adminName: examConfig.adminName,
+        timer: examConfig.timer,
+        subjects: subjectsArray
+      };
+      const savedConfig = await createExamConfig(configToSend);
+      setExamId(savedConfig.examId);
+      setMessage(`Exam configuration complete. Share this link: ${window.location.origin}/exam/${savedConfig.examId}`);
+      localStorage.setItem("adminExamConfig", JSON.stringify({ ...examConfig, examId: savedConfig.examId }));
     } catch (error) {
-      console.error("Error reviewing exam:", error);
-      setMessage("Error finalizing exam configuration.");
+      console.error("Error creating exam config:", error);
+      setMessage("Error creating exam configuration.");
     }
   };
 
-  // Logout for admin.
+  // Logout: preserve adminExamConfig in localStorage so admin can access their questions later.
   const handleLogout = () => {
+    const adminConfig = localStorage.getItem("adminExamConfig");
     localStorage.clear();
+    if (adminConfig) {
+      localStorage.setItem("adminExamConfig", adminConfig);
+    }
     navigate("/login");
   };
 
   return (
     <div className="container">
       <h2>Admin Panel - Create Exam Configuration</h2>
+      <p>Logged in as: {adminName}</p>
       
       {/* Timer Setting */}
       <div style={{ marginBottom: "1rem" }}>
@@ -181,91 +185,117 @@ const AdminPanel = () => {
         </label>
       </div>
       <hr />
-      
-      {/* Subject Addition Section */}
-      <div>
-        <h3>Add Subjects</h3>
-        <p>Enter a subject name and click "Add Subject". You can add as many subjects as you want.</p>
-        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+
+      {/* Fixed Subject Navigation */}
+      <div className="subject-list">
+        {fixedSubjects.map((subject) => (
+          <button
+            key={subject}
+            onClick={() => handleSubjectChange(subject)}
+            style={{
+              background: currentSubject === subject ? "var(--accent-dark)" : "var(--accent-color)",
+              color: "#fff",
+              padding: "0.5rem 1rem",
+              borderRadius: "20px",
+              margin: "0.25rem",
+              border: "none",
+              cursor: "pointer"
+            }}
+          >
+            {subject}
+          </button>
+        ))}
+      </div>
+      <hr />
+
+      {/* Add/Edit Question Section */}
+      <div style={{ textAlign: "left" }}>
+        <h3>{currentQuestionIndex !== null ? "Edit" : "Add"} a Question to {currentSubject}</h3>
+        <input
+          type="text"
+          placeholder="Question text"
+          value={currentQuestion.question}
+          onChange={handleQuestionChange}
+          style={{ width: "100%", marginBottom: "0.5rem" }}
+        />
+        {currentQuestion.options.map((option, index) => (
           <input
+            key={index}
             type="text"
-            placeholder="Enter subject name"
-            value={newSubject}
-            onChange={(e) => setNewSubject(e.target.value)}
+            placeholder={`Option ${index + 1}`}
+            value={option}
+            onChange={(e) => handleOptionChange(index, e.target.value)}
+            style={{ width: "100%", marginBottom: "0.5rem" }}
           />
-          <button type="button" onClick={handleAddSubject}>Add Subject</button>
-        </div>
-        {subjectsAdded.length > 0 && (
-          <div className="subject-list">
-            {subjectsAdded.map(subject => (
-              <button
-                key={subject}
-                onClick={() => handleSetCurrentSubject(subject)}
-                style={{
-                  background: currentSubject === subject ? "var(--accent-dark)" : "var(--accent-color)",
-                  color: "#fff",
-                  padding: "0.5rem 1rem",
-                  borderRadius: "20px",
-                  margin: "0.25rem",
-                  border: "none",
-                  cursor: "pointer"
-                }}
-              >
-                {subject}
-              </button>
-            ))}
-          </div>
+        ))}
+        <input
+          type="text"
+          placeholder="Correct Answer"
+          value={currentQuestion.correctAnswer}
+          onChange={handleCorrectAnswerChange}
+          style={{ width: "100%", marginBottom: "0.5rem" }}
+        />
+        {currentQuestionIndex !== null ? (
+          <>
+            <button type="button" onClick={handleUpdateQuestion}>
+              Update Question
+            </button>
+            <button type="button" onClick={handleClearQuestion} style={{ marginLeft: "1rem" }}>
+              Clear
+            </button>
+          </>
+        ) : (
+          <button type="button" onClick={handleAddQuestion}>
+            Add Question
+          </button>
         )}
       </div>
       <hr />
-      
-      {/* Add Questions Section */}
-      {currentSubject && (
-        <div style={{ textAlign: "left" }}>
-          <h3>Add a Question to {currentSubject}</h3>
-          <input
-            type="text"
-            placeholder="Question text"
-            value={currentQuestion.questionText}
-            onChange={handleQuestionChange}
-            style={{ width: "100%", marginBottom: "0.5rem" }}
-          />
-          {currentQuestion.options.map((option, index) => (
-            <input
-              key={index}
-              type="text"
-              placeholder={`Option ${index + 1}`}
-              value={option}
-              onChange={(e) => handleOptionChange(index, e.target.value)}
-              style={{ width: "100%", marginBottom: "0.5rem" }}
-            />
-          ))}
-          <input
-            type="text"
-            placeholder="Correct Answer"
-            value={currentQuestion.correctAnswer}
-            onChange={handleCorrectAnswerChange}
-            style={{ width: "100%", marginBottom: "0.5rem" }}
-          />
-          <div style={{ display: "flex", gap: "1rem" }}>
-            <button type="button" onClick={handleAddQuestion}>Next Question</button>
-            <button type="button" onClick={handleSaveSubject}>Save Subject</button>
-          </div>
+
+      {/* Grid Navigation for Questions */}
+      <div className="grid-navigation">
+        <h4>Questions in {currentSubject}:</h4>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: "0.5rem" }}>
+          {examConfig.subjects[currentSubject] &&
+            examConfig.subjects[currentSubject].map((q, idx) => (
+              <div
+                key={q.id || idx}
+                className="grid-box"
+                onClick={() => handleGoToQuestion(idx)}
+                style={{
+                  padding: "0.5rem",
+                  border: "1px solid #ccc",
+                  textAlign: "center",
+                  cursor: "pointer",
+                  background: "#fff"
+                }}
+              >
+                {idx + 1}
+              </div>
+            ))}
         </div>
-      )}
+      </div>
       <hr />
-      
-      {/* Review Exam Section */}
+
+      {/* Generate Exam Link */}
       <div>
-        <button onClick={handleReviewExam}>Review Exam & Generate Exam ID</button>
+        <button onClick={handleGenerateExamLink}>Generate Exam Link</button>
         {examId && (
           <div style={{ marginTop: "1rem", fontWeight: "bold" }}>
             Exam ID: {examId}
+            <br />
+            <a href={`${window.location.origin}/exam/${examId}`}>
+              {window.location.origin}/exam/{examId}
+            </a>
           </div>
         )}
       </div>
-      
-      {message && <p style={{ marginTop: "1rem", color: "green" }}>{message}</p>}
+
+      {message && (
+        <p style={{ marginTop: "1rem", whiteSpace: "pre-wrap", color: "green" }}>
+          {message}
+        </p>
+      )}
       <hr />
       <button onClick={handleLogout}>Logout</button>
     </div>
