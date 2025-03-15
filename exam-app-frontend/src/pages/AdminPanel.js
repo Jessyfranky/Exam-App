@@ -1,7 +1,7 @@
 // src/pages/AdminPanel.js
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createExamConfig } from "../services/adminApi.js"; // API function to save exam configuration
+import { createExamConfig } from "../services/adminApi";
 import "../styles/global.css";
 
 // Fixed subjects list.
@@ -10,7 +10,7 @@ const fixedSubjects = ["English", "Maths", "Physics", "Chemistry", "Biology"];
 const AdminPanel = () => {
   const navigate = useNavigate();
 
-  // Always call hooks unconditionally.
+  // Always call hooks at the top.
   const [adminName, setAdminName] = useState("");
   const [examConfig, setExamConfig] = useState({
     adminName: "",
@@ -26,7 +26,7 @@ const AdminPanel = () => {
     options: ["", "", "", ""],
     correctAnswer: ""
   });
-  // When a question is loaded from grid, store its index here (null means adding a new question).
+  // When a question is loaded via grid navigation, store its index (null means no question loaded).
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(null);
   const [message, setMessage] = useState("");
   const [examId, setExamId] = useState(null);
@@ -38,14 +38,13 @@ const AdminPanel = () => {
       setAdminName(user.name);
       setExamConfig((prev) => ({ ...prev, adminName: user.name }));
     }
-    // Load saved exam configuration if available.
     const storedConfig = localStorage.getItem("adminExamConfig");
     if (storedConfig) {
       setExamConfig(JSON.parse(storedConfig));
     }
   }, []);
 
-  // If no adminName is found, show error.
+  // If no admin name is found, show error.
   if (!adminName) {
     return (
       <div className="container">
@@ -78,13 +77,13 @@ const AdminPanel = () => {
     setCurrentQuestion({ ...currentQuestion, correctAnswer: e.target.value });
   };
 
-  // Add the current question to the selected subject.
+  // Add a new question to the current subject.
   const handleAddQuestion = () => {
     if (!currentQuestion.question.trim()) {
       setMessage("Please enter the question text.");
       return;
     }
-    if (currentQuestion.options.some((opt) => !opt.trim())) {
+    if (currentQuestion.options.some(opt => !opt.trim())) {
       setMessage("Please fill in all options.");
       return;
     }
@@ -92,13 +91,12 @@ const AdminPanel = () => {
       setMessage("Please specify the correct answer.");
       return;
     }
-    setExamConfig((prev) => {
+    setExamConfig(prev => {
       const updatedSubjects = {
         ...prev.subjects,
         [currentSubject]: [...prev.subjects[currentSubject], currentQuestion]
       };
       const newConfig = { ...prev, subjects: updatedSubjects };
-      // Save updated configuration in localStorage.
       localStorage.setItem("adminExamConfig", JSON.stringify(newConfig));
       return newConfig;
     });
@@ -107,10 +105,10 @@ const AdminPanel = () => {
     setCurrentQuestionIndex(null);
   };
 
-  // Update an existing question loaded from grid.
+  // Update an existing question.
   const handleUpdateQuestion = () => {
     if (currentQuestionIndex === null) return;
-    setExamConfig((prev) => {
+    setExamConfig(prev => {
       const updatedQuestions = [...prev.subjects[currentSubject]];
       updatedQuestions[currentQuestionIndex] = currentQuestion;
       const newSubjects = { ...prev.subjects, [currentSubject]: updatedQuestions };
@@ -123,23 +121,39 @@ const AdminPanel = () => {
     setCurrentQuestionIndex(null);
   };
 
-  // Clear current question selection.
+  // Delete an existing question.
+  const handleDeleteQuestion = () => {
+    if (currentQuestionIndex === null) return;
+    setExamConfig(prev => {
+      const updatedQuestions = [...prev.subjects[currentSubject]];
+      updatedQuestions.splice(currentQuestionIndex, 1);
+      const newSubjects = { ...prev.subjects, [currentSubject]: updatedQuestions };
+      const newConfig = { ...prev, subjects: newSubjects };
+      localStorage.setItem("adminExamConfig", JSON.stringify(newConfig));
+      return newConfig;
+    });
+    setMessage(`Question ${currentQuestionIndex + 1} deleted from ${currentSubject}.`);
+    setCurrentQuestion({ question: "", options: ["", "", "", ""], correctAnswer: "" });
+    setCurrentQuestionIndex(null);
+  };
+
+  // Clear the current question selection.
   const handleClearQuestion = () => {
     setCurrentQuestion({ question: "", options: ["", "", "", ""], correctAnswer: "" });
     setCurrentQuestionIndex(null);
   };
 
-  // Grid navigation: load question from grid into input fields.
+  // Grid navigation: load a question into input fields.
   const handleGoToQuestion = (index) => {
     setCurrentQuestionIndex(index);
     const questionToLoad = examConfig.subjects[currentSubject][index];
     setCurrentQuestion(questionToLoad);
   };
 
-  // Generate exam link: save configuration to backend and get examId.
+  // Generate exam link by sending configuration to backend.
   const handleGenerateExamLink = async () => {
     try {
-      const subjectsArray = Object.keys(examConfig.subjects).map((subjectName) => ({
+      const subjectsArray = Object.keys(examConfig.subjects).map(subjectName => ({
         name: subjectName,
         questions: examConfig.subjects[subjectName]
       }));
@@ -158,7 +172,7 @@ const AdminPanel = () => {
     }
   };
 
-  // Logout: preserve adminExamConfig in localStorage so admin can access their questions later.
+  // Logout: Preserve adminExamConfig so that questions persist between sessions.
   const handleLogout = () => {
     const adminConfig = localStorage.getItem("adminExamConfig");
     localStorage.clear();
@@ -239,6 +253,9 @@ const AdminPanel = () => {
           <>
             <button type="button" onClick={handleUpdateQuestion}>
               Update Question
+            </button>
+            <button type="button" onClick={handleDeleteQuestion} style={{ marginLeft: "1rem" }}>
+              Delete Question
             </button>
             <button type="button" onClick={handleClearQuestion} style={{ marginLeft: "1rem" }}>
               Clear
