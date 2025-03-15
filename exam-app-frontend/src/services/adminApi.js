@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const ADMIN_API_URL = process.env.REACT_APP_ADMIN_API_URL || "http://localhost:5000/api";
+const ADMIN_API_URL = process.env.REACT_APP_ADMIN_API_URL || "http://https://exam-app-5gw3.onrender.com/api";
 
 export const createExamConfig = async (configData) => {
   try {
