@@ -3,20 +3,20 @@ import ExamConfig from "../models/ExamConfig.js";
 
 const router = express.Router();
 
-// POST /api/admin/config - Create a new exam configuration
 router.post("/config", async (req, res) => {
   try {
-    const { adminId, subjects, timer } = req.body;
-    // Generate a unique examId using a random number and timestamp
-    const examId = "EXAM-" + Math.floor(Math.random() * 1000000) + "-" + Date.now();
-    const examConfig = new ExamConfig({ adminId, examId, subjects, timer });
+    const { adminName, subjects, timer } = req.body;
+    const examId = "EXAM-" + adminName.replace(/\s/g, "") + "-" + Math.floor(Math.random() * 1000000) + "-" + Date.now();
+    const examConfig = new ExamConfig({ adminName, examId, subjects, timer });
     await examConfig.save();
     res.status(201).json(examConfig);
   } catch (error) {
     console.error("Error creating exam config:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: error.message || "Server error" });
   }
 });
+
+
 
 router.post("/config/subject", async (req, res) => {
   try {
@@ -47,8 +47,9 @@ router.get("/config/:examId", async (req, res) => {
     res.json(config);
   } catch (error) {
     console.error("Error fetching exam config:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: error.message || "Server error" });
   }
 });
+
 
 export default router;
