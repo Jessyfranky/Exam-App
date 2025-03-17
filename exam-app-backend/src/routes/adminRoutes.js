@@ -20,15 +20,22 @@ router.post("/config", async (req, res) => {
 
 router.post("/config/subject", async (req, res) => {
   try {
-    const { adminId, subject, questions, timer } = req.body;
-    // For simplicity, create a new ExamConfig document per subject or update an existing configuration.
-    // Here we'll create a new document:
+    const { adminName, subject, questions, timer } = req.body; // Remove adminId
+    
+    if (!adminName || !subject || !questions) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Generate a unique `examId` for the subject
+    const examId = subject + "-" + Date.now();
+
     const examConfig = new ExamConfig({
-      adminId,
-      examId: subject + "-" + Date.now(), // or generate a unique ID in another way
+      adminName, // Store adminName instead of adminId
+      examId,
       subjects: [{ name: subject, questions }],
       timer
     });
+
     await examConfig.save();
     res.status(201).json(examConfig);
   } catch (error) {
