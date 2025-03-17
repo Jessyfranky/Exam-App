@@ -10,9 +10,10 @@ const fixedSubjects = ["English", "Maths", "Physics", "Chemistry", "Biology"];
 const AdminPanel = () => {
   const navigate = useNavigate();
 
-  // Always call hooks at the top.
+  // Initial exam configuration now includes adminId.
   const [adminName, setAdminName] = useState("");
   const [examConfig, setExamConfig] = useState({
+    adminId: "",
     adminName: "",
     timer: 600,
     subjects: fixedSubjects.reduce((acc, subject) => {
@@ -20,23 +21,32 @@ const AdminPanel = () => {
       return acc;
     }, {})
   });
+  
   const [currentSubject, setCurrentSubject] = useState(fixedSubjects[0]);
+  
+  // Update currentQuestion to use "questionText" key.
   const [currentQuestion, setCurrentQuestion] = useState({
-    question: "",
+    questionText: "",
     options: ["", "", "", ""],
     correctAnswer: ""
   });
+  
   // Holds the index of the currently loaded question (null if adding a new question).
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(null);
   const [message, setMessage] = useState("");
   const [examId, setExamId] = useState(null);
 
-  // On mount, load admin's name and any saved exam configuration.
+  // On mount, load admin's data and any saved exam configuration.
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
-    if (user && user.name) {
+    if (user && user.name && user._id) {
       setAdminName(user.name);
-      setExamConfig((prev) => ({ ...prev, adminName: user.name }));
+      // Set both adminName and adminId in examConfig.
+      setExamConfig((prev) => ({
+        ...prev,
+        adminName: user.name,
+        adminId: user._id
+      }));
     }
     const storedConfig = localStorage.getItem("adminExamConfig");
     if (storedConfig) {
@@ -44,7 +54,6 @@ const AdminPanel = () => {
     }
   }, []);
 
-  // If no adminName is found, show an error message.
   if (!adminName) {
     return (
       <div className="container">
@@ -58,13 +67,17 @@ const AdminPanel = () => {
   const handleSubjectChange = (subject) => {
     setCurrentSubject(subject);
     setMessage("");
-    setCurrentQuestion({ question: "", options: ["", "", "", ""], correctAnswer: "" });
+    setCurrentQuestion({
+      questionText: "",
+      options: ["", "", "", ""],
+      correctAnswer: ""
+    });
     setCurrentQuestionIndex(null);
   };
 
-  // Handlers for input changes.
+  // Handler for input changes; note we now update "questionText".
   const handleQuestionChange = (e) => {
-    setCurrentQuestion({ ...currentQuestion, question: e.target.value });
+    setCurrentQuestion({ ...currentQuestion, questionText: e.target.value });
   };
 
   const handleOptionChange = (index, value) => {
@@ -84,7 +97,7 @@ const AdminPanel = () => {
 
   // Handler to add a new question.
   const handleAddQuestion = () => {
-    if (!currentQuestion.question.trim()) {
+    if (!currentQuestion.questionText.trim()) {
       setMessage("Please enter the question text.");
       return;
     }
@@ -108,7 +121,11 @@ const AdminPanel = () => {
     setMessage(
       `Question ${examConfig.subjects[currentSubject].length + 1} added to ${currentSubject}.`
     );
-    setCurrentQuestion({ question: "", options: ["", "", "", ""], correctAnswer: "" });
+    setCurrentQuestion({
+      questionText: "",
+      options: ["", "", "", ""],
+      correctAnswer: ""
+    });
     setCurrentQuestionIndex(null);
   };
 
@@ -124,7 +141,11 @@ const AdminPanel = () => {
       return newConfig;
     });
     setMessage(`Question ${currentQuestionIndex + 1} updated in ${currentSubject}.`);
-    setCurrentQuestion({ question: "", options: ["", "", "", ""], correctAnswer: "" });
+    setCurrentQuestion({
+      questionText: "",
+      options: ["", "", "", ""],
+      correctAnswer: ""
+    });
     setCurrentQuestionIndex(null);
   };
 
@@ -140,13 +161,21 @@ const AdminPanel = () => {
       return newConfig;
     });
     setMessage(`Question ${currentQuestionIndex + 1} deleted from ${currentSubject}.`);
-    setCurrentQuestion({ question: "", options: ["", "", "", ""], correctAnswer: "" });
+    setCurrentQuestion({
+      questionText: "",
+      options: ["", "", "", ""],
+      correctAnswer: ""
+    });
     setCurrentQuestionIndex(null);
   };
 
   // Clear the current question input.
   const handleClearQuestion = () => {
-    setCurrentQuestion({ question: "", options: ["", "", "", ""], correctAnswer: "" });
+    setCurrentQuestion({
+      questionText: "",
+      options: ["", "", "", ""],
+      correctAnswer: ""
+    });
     setCurrentQuestionIndex(null);
   };
 
@@ -165,6 +194,7 @@ const AdminPanel = () => {
         questions: examConfig.subjects[subjectName],
       }));
       const configToSend = {
+        adminId: examConfig.adminId,  // Now included
         adminName: examConfig.adminName,
         timer: examConfig.timer,
         subjects: subjectsArray,
@@ -177,7 +207,6 @@ const AdminPanel = () => {
       persistConfig({ ...examConfig, examId: savedConfig.examId });
     } catch (error) {
       console.error("Error creating exam config:", error);
-      // Display a more descriptive error message:
       setMessage(`Error creating exam config: ${error.message || JSON.stringify(error)}`);
     }
   };
@@ -237,11 +266,14 @@ const AdminPanel = () => {
 
       {/* Add/Edit Question Section */}
       <div style={{ textAlign: "left" }}>
-        <h3>{currentQuestionIndex !== null ? "Edit" : "Add"} a Question to {currentSubject}</h3>
+        <h3>
+          {currentQuestionIndex !== null ? "Edit" : "Add"} a Question to{" "}
+          {currentSubject}
+        </h3>
         <input
           type="text"
           placeholder="Question text"
-          value={currentQuestion.question}
+          value={currentQuestion.questionText}
           onChange={handleQuestionChange}
           style={{ width: "100%", marginBottom: "0.5rem" }}
         />
@@ -293,7 +325,13 @@ const AdminPanel = () => {
       {/* Grid Navigation for Questions */}
       <div className="grid-navigation">
         <h4>Questions in {currentSubject}:</h4>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: "0.5rem" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(10, 1fr)",
+            gap: "0.5rem",
+          }}
+        >
           {examConfig.subjects[currentSubject] &&
             examConfig.subjects[currentSubject].map((q, idx) => (
               <div
