@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createExamConfig } from "../services/adminApi"; // API function to save exam configuration
+import { createExamConfig } from "../services/adminApi.js"; // API function to save exam configuration
 import "../styles/global.css";
 
 // Fixed subjects list.
