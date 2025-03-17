@@ -8,6 +8,7 @@ import examRoutes from "./routes/examRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import path from "path";
 
 dotenv.config({ path: './.env' }); // Explicitly specify path if needed
 
@@ -31,8 +32,14 @@ app.use("/api/exam", examRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/admin/login", adminRoutes);
-app.use("/api/admin/register", adminRoutes);
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, "build")));
+
+// The catch-all handler: for any request that doesn't match an API route, send back index.html.
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "build", "index.html"));
+});
+
 
 
 // const seedDatabase = async () => {
