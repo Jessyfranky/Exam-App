@@ -105,7 +105,9 @@ const AdminPanel = () => {
       persistConfig(newConfig);
       return newConfig;
     });
-    setMessage(`Question ${examConfig.subjects[currentSubject].length + 1} added to ${currentSubject}.`);
+    setMessage(
+      `Question ${examConfig.subjects[currentSubject].length + 1} added to ${currentSubject}.`
+    );
     setCurrentQuestion({ question: "", options: ["", "", "", ""], correctAnswer: "" });
     setCurrentQuestionIndex(null);
   };
@@ -158,22 +160,25 @@ const AdminPanel = () => {
   // Generate exam link by sending configuration to backend.
   const handleGenerateExamLink = async () => {
     try {
-      const subjectsArray = Object.keys(examConfig.subjects).map(subjectName => ({
+      const subjectsArray = Object.keys(examConfig.subjects).map((subjectName) => ({
         name: subjectName,
-        questions: examConfig.subjects[subjectName]
+        questions: examConfig.subjects[subjectName],
       }));
       const configToSend = {
         adminName: examConfig.adminName,
         timer: examConfig.timer,
-        subjects: subjectsArray
+        subjects: subjectsArray,
       };
       const savedConfig = await createExamConfig(configToSend);
       setExamId(savedConfig.examId);
-      setMessage(`Exam configuration complete. Share this link: ${window.location.origin}/exam/${savedConfig.examId}`);
+      setMessage(
+        `Exam configuration complete. Share this link: ${window.location.origin}/exam/${savedConfig.examId}`
+      );
       persistConfig({ ...examConfig, examId: savedConfig.examId });
     } catch (error) {
       console.error("Error creating exam config:", error);
-      setMessage("Error creating exam configuration.");
+      // Display a more descriptive error message:
+      setMessage(`Error creating exam config: ${error.message || JSON.stringify(error)}`);
     }
   };
 
@@ -199,7 +204,9 @@ const AdminPanel = () => {
           <input
             type="number"
             value={examConfig.timer}
-            onChange={(e) => setExamConfig(prev => ({ ...prev, timer: Number(e.target.value) }))}
+            onChange={(e) =>
+              setExamConfig((prev) => ({ ...prev, timer: Number(e.target.value) }))
+            }
           />
         </label>
       </div>
@@ -212,13 +219,14 @@ const AdminPanel = () => {
             key={subject}
             onClick={() => handleSubjectChange(subject)}
             style={{
-              background: currentSubject === subject ? "var(--accent-dark)" : "var(--accent-color)",
+              background:
+                currentSubject === subject ? "var(--accent-dark)" : "var(--accent-color)",
               color: "#fff",
               padding: "0.5rem 1rem",
               borderRadius: "20px",
               margin: "0.25rem",
               border: "none",
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
             {subject}
@@ -256,12 +264,28 @@ const AdminPanel = () => {
         />
         {currentQuestionIndex !== null ? (
           <>
-            <button type="button" onClick={handleUpdateQuestion}>Update Question</button>
-            <button type="button" onClick={handleDeleteQuestion} style={{ marginLeft: "1rem" }}>Delete Question</button>
-            <button type="button" onClick={handleClearQuestion} style={{ marginLeft: "1rem" }}>Clear</button>
+            <button type="button" onClick={handleUpdateQuestion}>
+              Update Question
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteQuestion}
+              style={{ marginLeft: "1rem" }}
+            >
+              Delete Question
+            </button>
+            <button
+              type="button"
+              onClick={handleClearQuestion}
+              style={{ marginLeft: "1rem" }}
+            >
+              Clear
+            </button>
           </>
         ) : (
-          <button type="button" onClick={handleAddQuestion}>Add Question</button>
+          <button type="button" onClick={handleAddQuestion}>
+            Add Question
+          </button>
         )}
       </div>
       <hr />
@@ -281,7 +305,7 @@ const AdminPanel = () => {
                   border: "1px solid #ccc",
                   textAlign: "center",
                   cursor: "pointer",
-                  background: "#fff"
+                  background: "#fff",
                 }}
               >
                 {idx + 1}
