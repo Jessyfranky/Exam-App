@@ -3,10 +3,12 @@ import ExamConfig from "../models/ExamConfig.js";
 
 const router = express.Router();
 
+
 router.post("/config", async (req, res) => {
   try {
     const { adminName, subjects, timer } = req.body;
-    const examId = "EXAM-" + adminName.replace(/\s/g, "") + "-" + Math.floor(Math.random() * 1000000) + "-" + Date.now();
+    // Generate a unique examId using the adminName and random components.
+    const examId = `EXAM-${adminName.replace(/\s/g, "")}-${Math.floor(Math.random() * 1000000)}-${Date.now()}`;
     const examConfig = new ExamConfig({ adminName, examId, subjects, timer });
     await examConfig.save();
     res.status(201).json(examConfig);
@@ -15,6 +17,7 @@ router.post("/config", async (req, res) => {
     res.status(500).json({ message: error.message || "Server error" });
   }
 });
+
 
 
 
