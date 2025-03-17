@@ -17,11 +17,9 @@ export const createExamConfig = async (configData) => {
 // Save a subject's configuration (if used separately)
 export const saveSubjectConfig = async (subjectConfig) => {
   try {
-    console.log("Saving subject config:", subjectConfig);
     const response = await axios.post(`${ADMIN_API_URL}/admin/config/subject`, subjectConfig);
     return response.data;
   } catch (error) {
-    console.error("saveSubjectConfig error:", error.response?.data || error);
     throw error.response?.data || error;
   }
 };
