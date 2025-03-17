@@ -16,6 +16,12 @@ console.log('JWT_SECRET:', process.env.JWT_SECRET); // This should now log your 
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use(express.static("build"));
+
+// Catch-all handler for client-side routes
+app.get("*", (req, res) => {
+  res.sendFile(path.resolve(__dirname, "build", "index.html"));
+});
 
 const mongoURI = process.env.MONGO_URI || "mongodb+srv://frankjesse:Jesse123@cluster0.icdvq.mongodb.net/"; 
 
