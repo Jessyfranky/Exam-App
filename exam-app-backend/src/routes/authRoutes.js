@@ -45,6 +45,42 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+router.post("/verify", async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+    if (user.status === "active") {
+      return res.status(400).json({ message: "User is already verified" });
+    }
+    if (user.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+    // Optional: Check if OTP has expired
+    if (user.otpExpires && user.otpExpires < new Date()) {
+      return res.status(400).json({ message: "OTP has expired" });
+    }
+    
+    // Update user status and clear OTP fields
+    user.status = "active";
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+    
+    // Generate a JWT token if needed.
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    
+    res.json({ message: "Email verified successfully", token, user });
+  } catch (error) {
+    console.error("OTP verification error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Login endpoint for normal users
 router.post("/login", async (req, res) => {
   try {
