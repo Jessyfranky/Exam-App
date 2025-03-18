@@ -46,7 +46,7 @@ const RegisterPage = () => {
     try {
       // Call your registration endpoint
       await registerUser(name, email, password, "user");
-      alert("OTP has been sent to your email. Please check your inbox.");
+      alert("OTP has been sent to your email. Please check your inbox or spam folder.");
       navigate("/verify-email", { state: { email } });
     } catch (err) {
       setError(err.message || "Registration failed.");
