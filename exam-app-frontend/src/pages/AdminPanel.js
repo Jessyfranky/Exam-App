@@ -21,7 +21,7 @@ const AdminPanel = () => {
     }, {})
   });
   const [currentSubject, setCurrentSubject] = useState(fixedSubjects[0]);
-  // Updated currentQuestion to use "questionText"
+  // Updated currentQuestion to use "questionText" key.
   const [currentQuestion, setCurrentQuestion] = useState({
     questionText: "",
     options: ["", "", "", ""],
@@ -45,7 +45,7 @@ const AdminPanel = () => {
     }
   }, []);
 
-  // If no adminName is found, show an error message.
+  // If no adminName is found, show an error.
   if (!adminName) {
     return (
       <div className="container">
@@ -181,10 +181,13 @@ const AdminPanel = () => {
   // Generate exam link by sending configuration to backend.
   const handleGenerateExamLink = async () => {
     try {
-      const subjectsArray = Object.keys(examConfig.subjects).map((subjectName) => ({
-        name: subjectName,
-        questions: examConfig.subjects[subjectName],
-      }));
+      // Filter out any questions that do not have a valid questionText.
+      const subjectsArray = Object.keys(examConfig.subjects).map((subjectName) => {
+        const validQuestions = examConfig.subjects[subjectName].filter(
+          (q) => q.questionText && q.questionText.trim() !== ""
+        );
+        return { name: subjectName, questions: validQuestions };
+      });
       const configToSend = {
         adminName: examConfig.adminName,
         timer: examConfig.timer,
@@ -202,7 +205,7 @@ const AdminPanel = () => {
     }
   };
 
-  // Logout: preserve adminExamConfig so admin can access their questions later.
+  // Logout: clear localStorage except for adminExamConfig so admin can access their questions later.
   const handleLogout = () => {
     const adminConfig = localStorage.getItem("adminExamConfig");
     localStorage.clear();
@@ -239,8 +242,7 @@ const AdminPanel = () => {
             key={subject}
             onClick={() => handleSubjectChange(subject)}
             style={{
-              background:
-                currentSubject === subject ? "var(--accent-dark)" : "var(--accent-color)",
+              background: currentSubject === subject ? "var(--accent-dark)" : "var(--accent-color)",
               color: "#fff",
               padding: "0.5rem 1rem",
               borderRadius: "20px",
