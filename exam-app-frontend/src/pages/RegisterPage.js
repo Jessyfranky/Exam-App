@@ -1,12 +1,15 @@
 // src/pages/RegisterPage.js
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+// Optionally, import a Google OAuth component/library
+import { GoogleLogin } from "@react-oauth/google";
 import { registerUser } from "../services/api.js";
 import "../styles/global.css";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   
+  // Local state for manual registration.
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,10 +17,11 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Handle manual registration.
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
-
+    
     if (!name || !email || !password || !confirmPassword) {
       setError("All fields are required.");
       return;
@@ -26,18 +30,36 @@ const RegisterPage = () => {
       setError("Passwords do not match.");
       return;
     }
-
+    
     setLoading(true);
     try {
-      // Always register as a normal user.
+      // Here, your backend should mark the new user as "pending" and send an OTP email.
       const data = await registerUser(name, email, password, "user");
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem("token", data.token);
-      navigate("/login");
+      // After registration, navigate to an OTP verification page.
+      navigate("/verify-email");
     } catch (err) {
       setError(err.message || "Registration failed.");
     }
     setLoading(false);
+  };
+
+  // Handle Google Sign-In success.
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      // Send credentialResponse.credential (JWT) to your backend to verify and create/log in the user.
+      // The backend should create the user record with an active status.
+      // For example:
+      // const data = await googleLogin(credentialResponse.credential);
+      // localStorage.setItem("token", data.token);
+      // localStorage.setItem("user", JSON.stringify(data.user));
+      navigate("/dashboard");
+    } catch (error) {
+      setError("Google sign-in failed.");
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError("Google sign-in was unsuccessful. Please try again.");
   };
 
   return (
@@ -76,6 +98,15 @@ const RegisterPage = () => {
           {loading ? "Registering..." : "Register"}
         </button>
       </form>
+      
+      <p style={{ marginTop: "1rem" }}>
+        Or continue with Google:
+      </p>
+      <GoogleLogin
+        onSuccess={handleGoogleSuccess}
+        onError={handleGoogleError}
+      />
+      
       <p style={{ marginTop: "1rem" }}>
         Already have an account?{" "}
         <Link to="/login" style={{ color: "#007bff", textDecoration: "underline" }}>
