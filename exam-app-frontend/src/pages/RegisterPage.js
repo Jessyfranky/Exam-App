@@ -7,7 +7,8 @@ import "../styles/global.css";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  
+
+  // Form state.
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,10 +16,17 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleRegister = async (e) => {
+  // Password validation (guide)
+  const isMinLength = password.length >= 8;
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasSymbol = /[^A-Za-z0-9]/.test(password);
+
+  const handleSendOTP = async (e) => {
     e.preventDefault();
     setError("");
 
+    // Validate required fields.
     if (!name || !email || !password || !confirmPassword) {
       setError("All fields are required.");
       return;
@@ -27,18 +35,25 @@ const RegisterPage = () => {
       setError("Passwords do not match.");
       return;
     }
+    if (!(isMinLength && hasUppercase && hasLowercase && hasSymbol)) {
+      setError("Password does not meet the required criteria.");
+      return;
+    }
 
     setLoading(true);
     try {
-      const data = await registerUser(name, email, password, "user");
-      // After registration, redirect to the verification page.
+      // Call registration endpoint.
+      // Backend should mark the user as "pending" and send an OTP to their email.
+      await registerUser(name, email, password, "user");
+      alert("OTP has been sent to your email. Please check your inbox.");
+      // Navigate to the OTP verification page, passing the email.
       navigate("/verify-email", { state: { email } });
     } catch (err) {
       setError(err.message || "Registration failed.");
     }
     setLoading(false);
   };
-
+ // Handle Google Sign-In success.
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       // Send credentialResponse.credential (JWT) to your backend to verify and create/log in the user.
@@ -64,16 +79,51 @@ const RegisterPage = () => {
         Register as <strong>User</strong>
       </p>
       {error && <p className="error" style={{ color: "red" }}>{error}</p>}
-      <form onSubmit={handleRegister}>
-        <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+      <form onSubmit={handleSendOTP}>
+        <input
+          type="text"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        {/* Password Guidelines */}
+        <div style={{ marginBottom: "0.5rem" }}>
+          <p style={{ color: isMinLength ? "green" : "red", margin: 0 }}>
+            {isMinLength ? "✓" : "✗"} At least 8 characters
+          </p>
+          <p style={{ color: hasUppercase ? "green" : "red", margin: 0 }}>
+            {hasUppercase ? "✓" : "✗"} At least one uppercase letter
+          </p>
+          <p style={{ color: hasLowercase ? "green" : "red", margin: 0 }}>
+            {hasLowercase ? "✓" : "✗"} At least one lowercase letter
+          </p>
+          <p style={{ color: hasSymbol ? "green" : "red", margin: 0 }}>
+            {hasSymbol ? "✓" : "✗"} At least one symbol
+          </p>
+        </div>
+        <input
+          type="password"
+          placeholder="Confirm Password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+        />
         <button type="submit" disabled={loading}>
-          {loading ? "Registering..." : "Register"}
+          {loading ? "Sending OTP..." : "Send OTP"}
         </button>
       </form>
-            <p style={{ marginTop: "1rem" }}>
+           <p style={{ marginTop: "1rem" }}>
         Or continue with Google:
       </p>
       <GoogleLogin
@@ -81,7 +131,13 @@ const RegisterPage = () => {
         onError={handleGoogleError}
       />
       <p style={{ marginTop: "1rem" }}>
-        Already have an account? <Link to="/login" style={{ color: "#007bff", textDecoration: "underline" }}>Login here</Link>
+        Already have an account?{" "}
+        <Link
+          to="/login"
+          style={{ color: "#007bff", textDecoration: "underline" }}
+        >
+          Login here
+        </Link>
       </p>
     </div>
   );
