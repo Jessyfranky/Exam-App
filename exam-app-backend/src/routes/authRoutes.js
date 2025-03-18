@@ -9,32 +9,42 @@ const router = express.Router();
 // Register endpoint for normal users
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-    
-    // Reject if role is set to "admin" - admin registration should be separate.
-    if (role && role === "admin") {
-      return res.status(403).json({ message: "Admin registration is not allowed via this route." });
-    }
-    
+    const { name, email, password } = req.body;
     let user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({ message: "User already exists" });
     }
     
     const hashedPassword = await bcrypt.hash(password, 10);
-    // Set role to "user" regardless of what was passed.
-    user = new User({ name, email, password: hashedPassword, role: "user" });
+    
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Optional: set an expiry for the OTP (e.g., 10 minutes)
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    
+    user = new User({
+      name,
+      email,
+      password: hashedPassword,
+      status: "pending",
+      otp,
+      otpExpires,
+    });
+    
     await user.save();
     
-    // Generate token.
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-    res.status(201).json({ message: "User registered successfully", user, token });
+    // Send OTP via email (this is a placeholder - implement with your email service)
+    // await sendEmail(email, "Your OTP Code", `Your OTP code is ${otp}`);
+    console.log(`OTP for ${email}: ${otp}`); // For testing
+    
+    res.status(201).json({
+      message: "User registered successfully. Please check your email for the OTP.",
+    });
   } catch (error) {
     console.error("Register error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
-
 // Login endpoint for normal users
 router.post("/login", async (req, res) => {
   try {
