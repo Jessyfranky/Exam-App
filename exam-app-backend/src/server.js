@@ -36,12 +36,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 
 // Serve static files from the build folder (if needed)
-app.use(express.static(path.join(process.cwd(), "build")));
 
-// Catch-all handler to serve index.html for client-side routing
-app.get("*", (req, res) => {
-  res.sendFile(path.join(process.cwd(), "build", "index.html"));
-});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
