@@ -212,7 +212,7 @@ const ExamPage = () => {
         </h3>
         {currentQuestion ? (
           <div>
-            <p>{currentQuestion.question}</p>
+            <p>{currentQuestion.questionText}</p>
             <div className="options">
               {currentQuestion.options.map((option) => (
                 <label key={currentQuestion.id + option} className="option">
