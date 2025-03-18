@@ -6,7 +6,8 @@ import User from "../models/User.js";
 
 const router = express.Router();
 
-// Register endpoint for normal users
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -14,32 +15,31 @@ router.post("/register", async (req, res) => {
     if (user) {
       return res.status(400).json({ message: "User already exists" });
     }
-    
+
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Generate a 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    // Optional: set an expiry for the OTP (e.g., 10 minutes)
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-    
+    // Generate OTP and set an expiration (optional)
+    const otp = generateOTP();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // OTP valid for 10 minutes
+
     user = new User({
       name,
       email,
       password: hashedPassword,
-      status: "pending",
+      status: "pending", // Mark user as pending verification
       otp,
       otpExpires,
     });
-    
+
     await user.save();
+
+    // Send OTP via email
+    const emailSent = await sendOTPEmail(email, otp);
+    if (!emailSent) {
+      return res.status(500).json({ message: "Failed to send OTP" });
+    }
     
-    // Send OTP via email (this is a placeholder - implement with your email service)
-    // await sendEmail(email, "Your OTP Code", `Your OTP code is ${otp}`);
-    console.log(`OTP for ${email}: ${otp}`); // For testing
-    
-    res.status(201).json({
-      message: "User registered successfully. Please check your email for the OTP.",
-    });
+    res.status(201).json({ message: "User registered successfully. Please verify your email using the OTP sent." });
   } catch (error) {
     console.error("Register error:", error);
     res.status(500).json({ message: "Server error" });
