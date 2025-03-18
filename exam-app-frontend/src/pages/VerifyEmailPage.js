@@ -42,7 +42,7 @@ const VerifyEmailPage = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL || "http://localhost:5000/api"}/auth/verify`,
+        `${process.env.REACT_APP_API_URL || "https://exam-app-mj2m.onrender.com/api"}/auth/verify`,
         { email, otp }
       );
       // On success, redirect to login or dashboard
@@ -58,7 +58,7 @@ const VerifyEmailPage = () => {
     setError("");
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL || "http://localhost:5000/api"}/auth/resend-otp`,
+        `${process.env.REACT_APP_API_URL || "https://exam-app-mj2m.onrender.com/api"}/auth/resend-otp`,
         { email }
       );
       setMessage("A new OTP has been sent to your email.");
