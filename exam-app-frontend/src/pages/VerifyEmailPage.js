@@ -7,7 +7,6 @@ import "../styles/global.css";
 const VerifyEmailPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  // Retrieve the email from state passed during navigation.
   const { email } = location.state || {};
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,8 +21,10 @@ const VerifyEmailPage = () => {
     }
     setLoading(true);
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL || "http://localhost:5000/api"}/auth/verify`, { email, otp });
-      // If verification is successful, redirect to login.
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000/api"}/auth/verify`,
+        { email, otp }
+      );
       navigate("/login");
     } catch (err) {
       setError(err.response?.data?.message || "Verification failed.");
@@ -34,7 +35,7 @@ const VerifyEmailPage = () => {
   return (
     <div className="container login-container">
       <h2>Email Verification</h2>
-      <p style={{ marginBottom: "1rem" }}>
+      <p>
         An OTP has been sent to <strong>{email}</strong>. Please enter it below to verify your email.
       </p>
       {error && <p className="error" style={{ color: "red" }}>{error}</p>}
