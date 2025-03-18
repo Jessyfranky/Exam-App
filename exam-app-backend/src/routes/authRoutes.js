@@ -80,6 +80,45 @@ router.post("/verify", async (req, res) => {
   }
 });
 
+router.post("/resend-otp", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required." });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "User not found." });
+    }
+
+    // If the user is already verified, no need to resend OTP.
+    if (user.status === "active") {
+      return res.status(400).json({ message: "User is already verified." });
+    }
+
+    // Generate new OTP and expiration (10 minutes from now)
+    const otp = generateOTP();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Update user record with the new OTP and expiration time
+    user.otp = otp;
+    user.otpExpires = otpExpires;
+    await user.save();
+
+    // Send the OTP via email
+    const emailSent = await sendOTPEmail(email, otp);
+    if (!emailSent) {
+      return res.status(500).json({ message: "Failed to send OTP." });
+    }
+
+    res.json({ message: "OTP resent successfully. Please check your email." });
+  } catch (error) {
+    console.error("Error in /auth/resend-otp:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+});
+
 // Login endpoint for normal users
 router.post("/login", async (req, res) => {
   try {
