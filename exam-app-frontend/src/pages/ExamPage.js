@@ -206,40 +206,41 @@ const ExamPage = () => {
       </div>
 
       {/* Current Question Display */}
-      <div className="question-section">
-        <h3>
-          Question {currentQuestionIndex + 1} of {currentSubjectQuestions.length}
-        </h3>
-        {currentQuestion ? (
-          <div>
-            <p>{currentQuestion.questionText}</p>
-            <div className="options">
-              {currentQuestion.options.map((option) => (
-                <label key={currentQuestion.id + option} className="option">
-                  <input
-                    type="radio"
-                    name={`question-${currentQuestion.id}`}
-                    value={option}
-                    checked={userAnswer === option}
-                    onChange={() => handleAnswerSelect(currentQuestion.id, option)}
-                  />
-                  {option}
-                </label>
-              ))}
-            </div>
-            {/* Feedback Message */}
-            {userAnswer && (
-              <p className={`feedback-message ${userAnswer === currentQuestion.correctAnswer ? "correct" : "wrong"}`}>
-                {userAnswer === currentQuestion.correctAnswer
-                  ? "Well done, that was correct."
-                  : "Oh... Sorry that was wrong."}
-              </p>
-            )}
-          </div>
-        ) : (
-          <p>No question available.</p>
-        )}
+<div className="question-section">
+  <h3>
+    Question {currentQuestionIndex + 1} of {currentSubjectQuestions.length}
+  </h3>
+  {currentQuestion ? (
+    <div>
+      {/* Use questionText to display the question */}
+      <p>{currentQuestion.questionText}</p>
+      <div className="options">
+        {currentQuestion.options.map((option, idx) => (
+          <label key={idx} className="option">
+            <input
+              type="radio"
+              name={`question-${currentQuestion.id || idx}`}
+              value={option}
+              checked={userAnswer === option}
+              onChange={() => handleAnswerSelect(currentQuestion.id || idx, option)}
+            />
+            {option}
+          </label>
+        ))}
       </div>
+      {userAnswer && (
+        <p className={`feedback-message ${userAnswer === currentQuestion.correctAnswer ? "correct" : "wrong"}`}>
+          {userAnswer === currentQuestion.correctAnswer
+            ? "Well done, that was correct."
+            : "Oh... Sorry that was wrong."}
+        </p>
+      )}
+    </div>
+  ) : (
+    <p>No question available.</p>
+  )}
+</div>
+
 
       {/* Navigation Buttons */}
       <div className="navigation-buttons" style={{ marginTop: "1rem" }}>
