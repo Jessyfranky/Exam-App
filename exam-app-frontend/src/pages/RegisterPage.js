@@ -16,7 +16,10 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Password validation (guide)
+  // Toggle for showing password.
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Password validation
   const isMinLength = password.length >= 8;
   const hasUppercase = /[A-Z]/.test(password);
   const hasLowercase = /[a-z]/.test(password);
@@ -26,7 +29,6 @@ const RegisterPage = () => {
     e.preventDefault();
     setError("");
 
-    // Validate required fields.
     if (!name || !email || !password || !confirmPassword) {
       setError("All fields are required.");
       return;
@@ -42,18 +44,17 @@ const RegisterPage = () => {
 
     setLoading(true);
     try {
-      // Call registration endpoint.
-      // Backend should mark the user as "pending" and send an OTP to their email.
+      // Call your registration endpoint
       await registerUser(name, email, password, "user");
       alert("OTP has been sent to your email. Please check your inbox.");
-      // Navigate to the OTP verification page, passing the email.
       navigate("/verify-email", { state: { email } });
     } catch (err) {
       setError(err.message || "Registration failed.");
     }
     setLoading(false);
   };
- // Handle Google Sign-In success.
+
+   // Handle Google Sign-In success.
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       // Send credentialResponse.credential (JWT) to your backend to verify and create/log in the user.
@@ -78,7 +79,11 @@ const RegisterPage = () => {
       <p style={{ marginBottom: "1rem" }}>
         Register as <strong>User</strong>
       </p>
-      {error && <p className="error" style={{ color: "red" }}>{error}</p>}
+      {error && (
+        <p className="error" style={{ color: "red", fontWeight: "bold" }}>
+          {error}
+        </p>
+      )}
       <form onSubmit={handleSendOTP}>
         <input
           type="text"
@@ -92,24 +97,35 @@ const RegisterPage = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        {/* Password Guidelines */}
-        <div style={{ marginBottom: "0.5rem" }}>
-          <p style={{ color: isMinLength ? "green" : "red", margin: 0 }}>
-            {isMinLength ? "✓" : "✗"} At least 8 characters
+        <div style={{ position: "relative" }}>
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <label style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={showPassword}
+              onChange={(e) => setShowPassword(e.target.checked)}
+              style={{ marginRight: "5px" }}
+            />
+            Show
+          </label>
+        </div>
+        {/* Password guidelines */}
+        <div style={{ marginBottom: "0.5rem", fontSize: "0.9rem" }}>
+          <p style={{ color: isMinLength ? "green" : "red", margin: "2px 0" }}>
+            {isMinLength ? "✓" : "✗"} Minimum 8 characters
           </p>
-          <p style={{ color: hasUppercase ? "green" : "red", margin: 0 }}>
+          <p style={{ color: hasUppercase ? "green" : "red", margin: "2px 0" }}>
             {hasUppercase ? "✓" : "✗"} At least one uppercase letter
           </p>
-          <p style={{ color: hasLowercase ? "green" : "red", margin: 0 }}>
+          <p style={{ color: hasLowercase ? "green" : "red", margin: "2px 0" }}>
             {hasLowercase ? "✓" : "✗"} At least one lowercase letter
           </p>
-          <p style={{ color: hasSymbol ? "green" : "red", margin: 0 }}>
+          <p style={{ color: hasSymbol ? "green" : "red", margin: "2px 0" }}>
             {hasSymbol ? "✓" : "✗"} At least one symbol
           </p>
         </div>
@@ -123,7 +139,7 @@ const RegisterPage = () => {
           {loading ? "Sending OTP..." : "Send OTP"}
         </button>
       </form>
-           <p style={{ marginTop: "1rem" }}>
+          <p style={{ marginTop: "1rem" }}>
         Or continue with Google:
       </p>
       <GoogleLogin
